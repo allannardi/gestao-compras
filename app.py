@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 import streamlit.components.v1 as components
+from PIL import Image
 
 try:
     from database.db import init_db, get_db_label
@@ -19,9 +20,11 @@ from services.utils import brl, pct, mes_atual
 from services.captura import detectar_qrcode_em_imagem, extrair_chave_nfce, salvar_imagem_nf
 from services.nfce import consultar_nfce_por_qrcode
 
+APP_ICON = Image.open("assets/app_icon.png")
+
 st.set_page_config(
     page_title="Gestão de Compras",
-    page_icon="🛒",
+    page_icon=APP_ICON,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -29,7 +32,7 @@ st.set_page_config(
 try:
     init_db()
 except Exception as exc:
-    st.set_page_config(page_title="Gestão de Compras", page_icon="🛒", layout="wide")
+    st.set_page_config(page_title="Gestão de Compras", page_icon=APP_ICON, layout="wide")
     st.error("Erro ao inicializar o banco de dados.")
     st.exception(exc)
     st.stop()
@@ -106,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5 • Layout mobile")
+    st.sidebar.caption("v0.5.1 • Ícone mobile")
     pages = [
         "Adicionar Compra",
         "Dashboard",
