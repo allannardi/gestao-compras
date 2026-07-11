@@ -26,7 +26,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-init_db()
+try:
+    init_db()
+except Exception as exc:
+    st.set_page_config(page_title="Gestão de Compras", page_icon="🛒", layout="wide")
+    st.error("Erro ao inicializar o banco de dados.")
+    st.exception(exc)
+    st.stop()
 
 with open("assets/style.css", "r", encoding="utf-8") as f:
     st.markdown(f.read(), unsafe_allow_html=True)
@@ -100,7 +106,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.4.6 • Online mobile")
+    st.sidebar.caption("v0.4.7 • Online mobile")
     pages = [
         "Adicionar Compra",
         "Dashboard",

@@ -1,4 +1,4 @@
-# Gestão de Compras v0.4.6
+# Gestão de Compras v0.4.7
 
 Checkpoint preparado para **GitHub + Streamlit Cloud + uso mobile via iPhone**.
 
@@ -65,11 +65,11 @@ Depois que o app estiver online com HTTPS:
 
 ## Observação sobre banco de dados
 
-Esta v0.4.6 está preparada para uso online com Turso. Localmente, se o Turso estiver configurado no secrets.toml, o app também usa Turso.
+Esta v0.4.7 está preparada para uso online com Turso. Localmente, se o Turso estiver configurado no secrets.toml, o app também usa Turso.
 Para uso online permanente, o próximo passo recomendado é migrar o banco para **Turso**.
 
 
-## v0.4.6 — Preparação Turso
+## v0.4.7 — Preparação Turso
 
 Esta versão adiciona suporte opcional ao banco online Turso.
 
@@ -90,7 +90,7 @@ auth_token = "SEU_TOKEN"
 ```
 
 
-## v0.4.6 — Caminho rápido para usar no iPhone
+## v0.4.7 — Caminho rápido para usar no iPhone
 
 Esta versão mantém a estratégia de Streamlit online + atalho na tela inicial do iPhone.
 

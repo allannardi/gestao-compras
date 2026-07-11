@@ -4,14 +4,43 @@ from services.utils import normalizar_texto
 
 
 def query_df(sql, params=()):
+    """Executa SELECT e retorna DataFrame.
+
+    Evita pd.read_sql_query diretamente porque conexões libSQL/Turso
+    podem não ser reconhecidas pelo pandas no Streamlit Cloud.
+    """
     with get_conn() as conn:
-        return pd.read_sql_query(sql, conn, params=params)
+        cur = conn.execute(sql, params)
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in (cur.description or [])]
+        normalized_rows = []
+        for row in rows:
+            if isinstance(row, dict):
+                normalized_rows.append(row)
+            else:
+                try:
+                    normalized_rows.append(dict(row))
+                except Exception:
+                    normalized_rows.append({columns[i]: row[i] for i in range(len(columns))})
+        return pd.DataFrame(normalized_rows, columns=columns)
 
 
 def execute(sql, params=()):
     with get_conn() as conn:
         cur = conn.execute(sql, params)
-        return cur.lastrowid
+        last_id = getattr(cur, "lastrowid", None)
+        if last_id is not None:
+            return last_id
+        try:
+            row = conn.execute("SELECT last_insert_rowid()").fetchone()
+            if row is not None:
+                try:
+                    return row[0]
+                except Exception:
+                    return row["last_insert_rowid()"]
+        except Exception:
+            pass
+        return None
 
 
 def get_categorias(ativas=True):
