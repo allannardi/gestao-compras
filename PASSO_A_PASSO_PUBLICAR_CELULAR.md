@@ -37,7 +37,7 @@ Na pasta do projeto:
 ```bash
 git init
 git add .
-git commit -m "Gestao de Compras v0.4.7 online mobile"
+git commit -m "Gestao de Compras v0.4.8 online mobile"
 git branch -M main
 git remote add origin URL_DO_REPOSITORIO
 git push -u origin main

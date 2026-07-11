@@ -1,4 +1,4 @@
-# Gestão de Compras v0.4.7
+# Gestão de Compras v0.4.8
 
 Checkpoint preparado para **GitHub + Streamlit Cloud + uso mobile via iPhone**.
 
@@ -65,11 +65,11 @@ Depois que o app estiver online com HTTPS:
 
 ## Observação sobre banco de dados
 
-Esta v0.4.7 está preparada para uso online com Turso. Localmente, se o Turso estiver configurado no secrets.toml, o app também usa Turso.
+Esta v0.4.8 está preparada para uso online com Turso. Localmente, se o Turso estiver configurado no secrets.toml, o app também usa Turso.
 Para uso online permanente, o próximo passo recomendado é migrar o banco para **Turso**.
 
 
-## v0.4.7 — Preparação Turso
+## v0.4.8 — Preparação Turso
 
 Esta versão adiciona suporte opcional ao banco online Turso.
 
@@ -90,7 +90,7 @@ auth_token = "SEU_TOKEN"
 ```
 
 
-## v0.4.7 — Caminho rápido para usar no iPhone
+## v0.4.8 — Caminho rápido para usar no iPhone
 
 Esta versão mantém a estratégia de Streamlit online + atalho na tela inicial do iPhone.
 
@@ -104,3 +104,8 @@ Próximo fluxo recomendado:
 4. Informar os secrets do Turso no painel do Streamlit Cloud.
 5. Abrir o link HTTPS no Safari do iPhone.
 6. Adicionar à Tela de Início.
+
+
+## v0.4.8 — Correção Streamlit Cloud
+
+Ajuste de deploy: removida a porta fixa `8502` do `.streamlit/config.toml` para o Streamlit Cloud subir na porta padrão `8501`. O inicializador local continua usando a porta `8502` pelo arquivo `start_gestao_compras.bat`.
