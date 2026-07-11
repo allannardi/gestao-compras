@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.3 • Mobile estável")
+    st.sidebar.caption("v0.5.4 • Mobile online")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -119,6 +119,7 @@ def sidebar():
         "Categorias",
         "Histórico de Preços",
         "Exportar Excel",
+        "Manutenção",
     ]
     if "page" not in st.session_state:
         st.session_state.page = "Adicionar Compra"
@@ -216,12 +217,23 @@ def render_tabela_conferencia_nf(itens):
 
 
 def render_itens_compra_modal(itens):
-    """Renderiza os itens do modal de detalhes da compra em cards mobile-first."""
-    if itens is None or itens.empty:
+    """Renderiza os itens da compra em cards mobile-first, aceitando DataFrame ou lista."""
+    if itens is None:
         return
-    df = itens.copy()
+
+    # Aceita tanto DataFrame quanto lista de dicts para evitar processamento pesado no mobile.
+    try:
+        if hasattr(itens, "empty") and itens.empty:
+            return
+        registros = itens.to_dict("records") if hasattr(itens, "to_dict") else list(itens)
+    except Exception:
+        registros = []
+
+    if not registros:
+        return
+
     st.markdown('<div class="mobile-list-title">Itens desta compra</div>', unsafe_allow_html=True)
-    for idx, row in df.iterrows():
+    for row in registros:
         produto = _safe_html(row.get("produto") or row.get("descricao_original") or "-")
         desc = _safe_html(row.get("descricao_original") or "-")
         qtd = qtd_br(row.get("quantidade") or 0)
@@ -959,12 +971,21 @@ def _format_date_br(value):
 
 
 def _render_detalhes_compra(compra_id):
-    resumo = db.resumo_compra(compra_id)
+    """Detalhes da compra em modo leve para mobile/Streamlit Cloud."""
+    try:
+        resumo = db.resumo_compra_light(compra_id) if hasattr(db, "resumo_compra_light") else db.resumo_compra(compra_id)
+    except Exception as exc:
+        st.error("Não foi possível carregar os detalhes desta compra.")
+        st.exception(exc)
+        return
+
     compra = resumo.get("compra")
     itens = resumo.get("itens")
     if not compra:
         st.warning("Não encontrei esta compra.")
         return
+
+    st.markdown('<div class="section-title">Detalhes da Compra</div>', unsafe_allow_html=True)
 
     kpi_grid([
         ("Data", _format_date_br(compra.get("data_compra")), "Data da compra"),
@@ -973,27 +994,37 @@ def _render_detalhes_compra(compra_id):
         ("Pagamento", compra.get("forma_pagamento") or "Não informado", brl(float(compra.get("valor_pago") or 0))),
     ])
 
-    c1, c2 = st.columns(2)
-    c1.markdown(f"**Supermercado**  \n{compra.get('mercado') or 'Sem supermercado'}")
-    c2.markdown(f"**CNPJ**  \n{compra.get('mercado_cnpj') or 'Não informado'}")
+    mercado = _safe_html(compra.get('mercado') or 'Sem supermercado')
+    cnpj = _safe_html(compra.get('mercado_cnpj') or 'Não informado')
+    origem = _safe_html(compra.get('origem') or '-')
+    status = _safe_html(compra.get('status_leitura') or '-')
+    chave = _safe_html(compra.get('chave_nfce') or '')
 
-    c3, c4 = st.columns(2)
-    c3.markdown(f"**Origem**  \n{compra.get('origem') or '-'}")
-    c4.markdown(f"**Status da leitura**  \n{compra.get('status_leitura') or '-'}")
+    st.markdown(f"""
+<div class="mobile-item-card">
+  <div class="mobile-card-title">{mercado}</div>
+  <div class="mobile-card-subtitle">CNPJ: {cnpj}</div>
+  <div class="mobile-card-grid">
+    <div><span>Origem</span><strong>{origem}</strong></div>
+    <div><span>Status</span><strong>{status}</strong></div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-    if compra.get("chave_nfce"):
-        st.markdown(f"**Chave NFC-e**  \n`{compra.get('chave_nfce')}`")
+    if chave:
+        st.caption("Chave NFC-e")
+        st.code(chave, language=None)
 
-    if compra.get("observacoes"):
+    obs = compra.get("observacoes") or ""
+    if obs:
         with st.expander("Observações"):
-            st.write(compra.get("observacoes"))
+            st.write(obs)
 
     if compra.get("url_qrcode"):
         with st.expander("URL / conteúdo do QR Code"):
             st.text_area("URL / QR Code", value=compra.get("url_qrcode") or "", height=90, label_visibility="collapsed")
 
-    st.markdown('<div class="section-title">Itens desta compra</div>', unsafe_allow_html=True)
-    if itens is not None and not itens.empty:
+    if itens:
         render_itens_compra_modal(itens)
         total_itens = float(resumo.get("total_itens") or 0)
         diferenca = float(resumo.get("diferenca") or 0)
@@ -1003,7 +1034,6 @@ def _render_detalhes_compra(compra_id):
             st.warning(f"Soma dos itens {brl(total_itens)} x valor da nota {brl(float(compra.get('valor_total') or 0))}. Diferença: {brl(diferenca)}.")
     else:
         st.info("Esta compra ainda não possui itens registrados.")
-
 
 def _abrir_modal_detalhes(compra_id):
     """Mantido apenas por compatibilidade.
@@ -1293,6 +1323,36 @@ def page_exportar():
     )
 
 
+
+def page_manutencao():
+    header()
+    st.markdown('<div class="section-title">Manutenção</div>', unsafe_allow_html=True)
+    st.warning("Use esta área apenas para limpar dados de teste. Esta ação afeta o banco ativo mostrado na sidebar.")
+
+    st.markdown("#### Limpar compras de teste")
+    st.caption("Apaga compras e itens registrados, mantendo produtos, supermercados e categorias.")
+    confirmar = st.text_input("Digite APAGAR para confirmar", key="confirmar_limpar_compras")
+    if st.button("Limpar compras de teste", use_container_width=True, disabled=(confirmar.strip().upper() != "APAGAR")):
+        try:
+            db.limpar_compras_teste()
+            st.success("Compras, itens e histórico operacional foram apagados.")
+        except Exception as exc:
+            st.error("Não consegui limpar as compras.")
+            st.exception(exc)
+
+    st.divider()
+    st.markdown("#### Zerar banco de testes")
+    st.caption("Apaga compras, itens, produtos e supermercados. Mantém/recria categorias padrão.")
+    confirmar_zerar = st.text_input("Digite ZERAR para confirmar", key="confirmar_zerar_banco")
+    if st.button("Zerar banco de testes", use_container_width=True, disabled=(confirmar_zerar.strip().upper() != "ZERAR")):
+        try:
+            db.zerar_banco_teste()
+            st.success("Banco de testes zerado. Categorias padrão mantidas.")
+        except Exception as exc:
+            st.error("Não consegui zerar o banco.")
+            st.exception(exc)
+
+
 def main():
     sidebar()
     page = st.session_state.page
@@ -1312,6 +1372,8 @@ def main():
         page_historico()
     elif page == "Exportar Excel":
         page_exportar()
+    elif page == "Manutenção":
+        page_manutencao()
 
 
 if __name__ == "__main__":

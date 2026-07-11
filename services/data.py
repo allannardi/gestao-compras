@@ -216,6 +216,73 @@ def get_itens(compra_id=None):
     """, params)
 
 
+
+
+
+def get_itens_light(compra_id):
+    """Busca itens de uma compra como lista de dicts, sem DataFrame.
+
+    Esta função é usada na visualização mobile de detalhes para reduzir
+    processamento no Streamlit Cloud e evitar instabilidade com DataFrames
+    grandes/consultas remotas no momento do clique em Detalhes.
+    """
+    with get_conn() as conn:
+        cur = conn.execute("""
+            SELECT
+                i.id,
+                i.compra_id,
+                i.descricao_original,
+                i.quantidade,
+                i.unidade,
+                i.valor_unitario,
+                i.valor_total,
+                p.nome_padronizado AS produto,
+                c.nome AS categoria
+            FROM itens_compra i
+            LEFT JOIN produtos p ON p.id = i.produto_id
+            LEFT JOIN categorias c ON c.id = p.categoria_id
+            WHERE i.compra_id = ?
+            ORDER BY i.id ASC
+        """, (compra_id,))
+        rows = cur.fetchall()
+        columns = [d[0] for d in (cur.description or [])]
+        return [_row_to_dict(row, columns) for row in rows]
+
+
+def resumo_compra_light(compra_id):
+    """Resumo leve da compra sem pandas, usado no mobile/online."""
+    compra = get_compra(compra_id)
+    itens = get_itens_light(compra_id)
+    total_itens = sum(float((item or {}).get('valor_total') or 0) for item in itens)
+    qtd_itens = len(itens)
+    diferenca = float((compra or {}).get('valor_total') or 0) - total_itens if compra else 0.0
+    return {
+        'compra': compra,
+        'itens': itens,
+        'total_itens': total_itens,
+        'qtd_itens': qtd_itens,
+        'diferenca': diferenca,
+    }
+
+
+def limpar_compras_teste():
+    """Apaga compras, itens e histórico operacional, mantendo cadastros."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM itens_compra")
+        conn.execute("DELETE FROM compras")
+
+
+def zerar_banco_teste():
+    """Apaga dados de teste principais, mantendo as categorias padrão recriadas."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM mapeamentos_produto")
+        conn.execute("DELETE FROM itens_compra")
+        conn.execute("DELETE FROM compras")
+        conn.execute("DELETE FROM produtos")
+        conn.execute("DELETE FROM mercados")
+        # mantém categorias existentes; garante categorias padrão
+        seed_defaults(conn)
+
 def add_item(compra_id, descricao_original, produto_id, quantidade, unidade, valor_unitario, valor_total=None, desconto=0):
     if valor_total is None:
         valor_total = float(quantidade or 0) * float(valor_unitario or 0) - float(desconto or 0)
