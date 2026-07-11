@@ -266,21 +266,36 @@ def resumo_compra_light(compra_id):
 
 
 def limpar_compras_teste():
-    """Apaga compras, itens e histórico operacional, mantendo cadastros."""
-    with get_conn() as conn:
-        conn.execute("DELETE FROM itens_compra")
-        conn.execute("DELETE FROM compras")
+    """Apaga compras, itens e histórico operacional, mantendo cadastros.
+
+    No Turso/libSQL, alguns ambientes do Streamlit Cloud ficaram instáveis
+    quando várias exclusões eram executadas na mesma conexão logo após uma
+    interação de botão. Por isso cada DELETE é feito em uma conexão curta,
+    com commit imediato, reduzindo risco de queda do processo.
+    """
+    # Remove vínculos aprendidos da compra antes de apagar itens/compras.
+    # Produtos, mercados e categorias continuam preservados.
+    for sql in (
+        "DELETE FROM mapeamentos_produto",
+        "DELETE FROM itens_compra",
+        "DELETE FROM compras",
+    ):
+        execute(sql)
 
 
 def zerar_banco_teste():
     """Apaga dados de teste principais, mantendo as categorias padrão recriadas."""
+    for sql in (
+        "DELETE FROM mapeamentos_produto",
+        "DELETE FROM itens_compra",
+        "DELETE FROM compras",
+        "DELETE FROM produtos",
+        "DELETE FROM mercados",
+    ):
+        execute(sql)
+
+    # Garante categorias padrão em uma nova conexão curta.
     with get_conn() as conn:
-        conn.execute("DELETE FROM mapeamentos_produto")
-        conn.execute("DELETE FROM itens_compra")
-        conn.execute("DELETE FROM compras")
-        conn.execute("DELETE FROM produtos")
-        conn.execute("DELETE FROM mercados")
-        # mantém categorias existentes; garante categorias padrão
         seed_defaults(conn)
 
 def add_item(compra_id, descricao_original, produto_id, quantidade, unidade, valor_unitario, valor_total=None, desconto=0):

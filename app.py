@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.4 • Mobile online")
+    st.sidebar.caption("v0.5.5 • Mobile online")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -1335,7 +1335,11 @@ def page_manutencao():
     if st.button("Limpar compras de teste", use_container_width=True, disabled=(confirmar.strip().upper() != "APAGAR")):
         try:
             db.limpar_compras_teste()
-            st.success("Compras, itens e histórico operacional foram apagados.")
+            for key in ("detalhe_compra_id", "compra_registrada_id", "nfce_preview", "qr_text"):
+                st.session_state.pop(key, None)
+            st.success("Compras, itens e vínculos de teste foram apagados. Produtos, supermercados e categorias foram mantidos.")
+            st.info("Abra a tela Compras ou Dashboard novamente para conferir o banco limpo.")
+            st.stop()
         except Exception as exc:
             st.error("Não consegui limpar as compras.")
             st.exception(exc)
@@ -1347,7 +1351,11 @@ def page_manutencao():
     if st.button("Zerar banco de testes", use_container_width=True, disabled=(confirmar_zerar.strip().upper() != "ZERAR")):
         try:
             db.zerar_banco_teste()
-            st.success("Banco de testes zerado. Categorias padrão mantidas.")
+            for key in ("detalhe_compra_id", "compra_registrada_id", "nfce_preview", "qr_text"):
+                st.session_state.pop(key, None)
+            st.success("Banco de testes zerado. Categorias padrão mantidas/recriadas.")
+            st.info("Abra a tela Produtos, Compras ou Dashboard novamente para conferir o banco limpo.")
+            st.stop()
         except Exception as exc:
             st.error("Não consegui zerar o banco.")
             st.exception(exc)

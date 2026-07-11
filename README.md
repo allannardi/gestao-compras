@@ -1,4 +1,4 @@
-# Gestão de Compras v0.5.4
+# Gestão de Compras v0.5.5
 
 Checkpoint preparado para **GitHub + Streamlit Cloud + uso mobile via iPhone**.
 
@@ -65,11 +65,11 @@ Depois que o app estiver online com HTTPS:
 
 ## Observação sobre banco de dados
 
-Esta v0.5.4 está preparada para uso online com Turso. Localmente, se o Turso estiver configurado no secrets.toml, o app também usa Turso.
+Esta v0.5.5 está preparada para uso online com Turso. Localmente, se o Turso estiver configurado no secrets.toml, o app também usa Turso.
 Para uso online permanente, o próximo passo recomendado é migrar o banco para **Turso**.
 
 
-## v0.5.4 — Preparação Turso
+## v0.5.5 — Preparação Turso
 
 Esta versão adiciona suporte opcional ao banco online Turso.
 
@@ -90,7 +90,7 @@ auth_token = "SEU_TOKEN"
 ```
 
 
-## v0.5.4 — Caminho rápido para usar no iPhone
+## v0.5.5 — Caminho rápido para usar no iPhone
 
 Esta versão mantém a estratégia de Streamlit online + atalho na tela inicial do iPhone.
 
@@ -106,12 +106,12 @@ Próximo fluxo recomendado:
 6. Adicionar à Tela de Início.
 
 
-## v0.5.4 — Correção Streamlit Cloud
+## v0.5.5 — Correção Streamlit Cloud
 
 Ajuste de deploy: removida a porta fixa `8502` do `.streamlit/config.toml` para o Streamlit Cloud subir na porta padrão `8501`. O inicializador local continua usando a porta `8502` pelo arquivo `start_gestao_compras.bat`.
 
 
-## v0.5.4
+## v0.5.5
 
 Correções:
 - Compatibilidade melhor com Turso/libSQL ao acessar linhas do banco.
@@ -129,7 +129,7 @@ app_database_mode = "turso"
 ```
 
 
-## v0.5.4 - Layout mobile
+## v0.5.5 - Layout mobile
 
 - Tela Compras em cards para celular.
 - Conferência da NFC-e em cards.
@@ -137,19 +137,27 @@ app_database_mode = "turso"
 - Visual mobile-first para evitar tabelas quebradas no iPhone.
 
 
-## v0.5.4
+## v0.5.5
 
 - Adicionado ícone próprio do Gestão de Compras para navegador/atalho no iPhone.
 - Ícone sugerido: carrinho de compras branco com recibo em fundo azul.
 - Após publicar, remova o atalho antigo do iPhone e adicione novamente pela tela de compartilhamento do Safari.
 
 
-## v0.5.4
+## v0.5.5
 
 Ajuste de dependências para Streamlit Cloud: removidos pins rígidos de versões para evitar build lento do pandas em Python novo no ambiente online.
 
 
-## v0.5.4
+## v0.5.5
 - Corrige detalhes da compra no mobile/online com carregamento leve.
 - Inclui página Manutenção para limpar compras de teste ou zerar banco.
 - Mantém ícones novos em assets.
+
+
+## v0.5.5
+
+- Ajuste de manutenção segura no Turso/Streamlit Cloud.
+- Limpar compras de teste agora remove também vínculos de mapeamento, mantendo produtos, supermercados e categorias.
+- As exclusões são feitas em conexões curtas para evitar instabilidade no mobile/online.
+- Ícones novos mantidos em `assets/app_icon.png` e `assets/favicon.png`.
