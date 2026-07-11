@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.1 • Ícone mobile")
+    st.sidebar.caption("v0.5.2 • Mobile estável")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -1006,26 +1006,35 @@ def _render_detalhes_compra(compra_id):
 
 
 def _abrir_modal_detalhes(compra_id):
-    if hasattr(st, "dialog"):
-        @st.dialog("Detalhes da Compra", width="large")
-        def _dialog():
-            _render_detalhes_compra(compra_id)
-            if st.button("Fechar", use_container_width=True):
-                st.session_state.pop("detalhe_compra_id", None)
-                rerun()
-        _dialog()
-    else:
-        st.markdown('<div class="section-title">Detalhes da Compra</div>', unsafe_allow_html=True)
-        _render_detalhes_compra(compra_id)
-        if st.button("Fechar detalhes", use_container_width=True):
-            st.session_state.pop("detalhe_compra_id", None)
-            rerun()
+    """Mantido apenas por compatibilidade.
+
+    Na versão mobile/online, evitamos st.dialog para Detalhes da Compra,
+    pois em alguns ambientes do Streamlit Cloud ele pode derrubar o processo
+    ao abrir conteúdo grande. Os detalhes agora são renderizados diretamente
+    na página Compras.
+    """
+    st.markdown('<div class="section-title">Detalhes da Compra</div>', unsafe_allow_html=True)
+    _render_detalhes_compra(compra_id)
+    if st.button("Fechar detalhes", use_container_width=True, key=f"fechar_detalhes_inline_{compra_id}"):
+        st.session_state.pop("detalhe_compra_id", None)
+        rerun()
 
 
 
 def page_compras():
     header()
     st.markdown('<div class="section-title">Compras</div>', unsafe_allow_html=True)
+
+    if st.session_state.get("detalhe_compra_id"):
+        compra_id = int(st.session_state.detalhe_compra_id)
+        if st.button("← Voltar para compras", use_container_width=True, key="voltar_lista_compras_topo"):
+            st.session_state.pop("detalhe_compra_id", None)
+            rerun()
+        _render_detalhes_compra(compra_id)
+        if st.button("Fechar detalhes", use_container_width=True, key="voltar_lista_compras_rodape"):
+            st.session_state.pop("detalhe_compra_id", None)
+            rerun()
+        return
 
     if st.session_state.get("compra_registrada_id"):
         render_compra_registrada(int(st.session_state.compra_registrada_id))
@@ -1074,8 +1083,6 @@ def page_compras():
             rerun()
         st.markdown("<div class='mobile-card-spacer'></div>", unsafe_allow_html=True)
 
-    if st.session_state.get("detalhe_compra_id"):
-        _abrir_modal_detalhes(int(st.session_state.detalhe_compra_id))
 
 def page_itens():
     header()
