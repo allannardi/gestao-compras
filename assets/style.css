@@ -1,0 +1,146 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+.block-container { padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1180px; }
+
+.main-title { font-size: 2rem; font-weight: 800; color: #0F172A; margin-bottom: .1rem; }
+.subtitle { font-size: .98rem; color: #64748B; margin-bottom: 1.2rem; }
+
+.card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 18px;
+    padding: 18px 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    margin-bottom: 14px;
+}
+
+.kpi-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+.kpi-label { color: #64748B; font-size: .82rem; font-weight: 600; margin-bottom: 6px; }
+.kpi-value { color: #0F172A; font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
+.kpi-help { color: #64748B; font-size: .78rem; margin-top: 5px; }
+
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: .76rem;
+    font-weight: 700;
+    border: 1px solid #BFDBFE;
+}
+
+.section-title { font-size: 1.15rem; font-weight: 800; color: #0F172A; margin: 8px 0 12px; }
+.muted { color: #64748B; font-size: .9rem; }
+
+.table-header {
+    font-size: .78rem;
+    color: #64748B;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    padding: 10px 8px 8px;
+    border-bottom: 1px solid #E2E8F0;
+}
+.table-cell {
+    font-size: .9rem;
+    color: #0F172A;
+    padding: 10px 8px;
+    min-height: 42px;
+    border-bottom: 1px solid #EEF2F7;
+}
+
+[data-testid="stSidebar"] { background: #0F172A; }
+[data-testid="stSidebar"] * { color: #F8FAFC; }
+[data-testid="stSidebar"] .stButton button {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: #1E293B;
+    color: #F8FAFC !important;
+    font-weight: 700;
+    box-shadow: none;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+    background: #334155;
+    border-color: rgba(255,255,255,.18);
+}
+[data-testid="stSidebar"] .stButton button[kind="primary"],
+[data-testid="stSidebar"] .stButton button[data-testid="baseButton-primary"] {
+    background: #2563EB !important;
+    border: 1px solid #3B82F6 !important;
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+}
+[data-testid="stSidebar"] .stButton button[kind="primary"]:hover,
+[data-testid="stSidebar"] .stButton button[data-testid="baseButton-primary"]:hover {
+    background: #1D4ED8 !important;
+}
+
+button[kind="secondary"] {
+    border-radius: 10px !important;
+}
+
+@media (max-width: 900px) {
+    .main-title { font-size: 1.65rem; }
+}
+</style>
+<style>
+.table-center { text-align: center; }
+.table-left { text-align: left; }
+.table-strong { font-weight: 800; }
+</style>
+<style>
+/* v0.4 - ajustes para uso como web app no celular */
+@media (max-width: 640px) {
+    .block-container {
+        padding: .85rem .75rem 2rem !important;
+    }
+    .main-title {
+        font-size: 1.45rem !important;
+        line-height: 1.15;
+    }
+    .subtitle {
+        font-size: .86rem !important;
+        margin-bottom: .9rem;
+    }
+    .section-title {
+        font-size: 1.02rem;
+    }
+    .kpi-card {
+        padding: 12px;
+        border-radius: 14px;
+    }
+    .kpi-value {
+        font-size: 1.12rem;
+    }
+    .table-header {
+        font-size: .68rem;
+        padding: 8px 4px 6px;
+    }
+    .table-cell {
+        font-size: .78rem;
+        padding: 8px 4px;
+        min-height: 36px;
+    }
+    div[data-testid="stButton"] button,
+    div[data-testid="stDownloadButton"] button {
+        min-height: 44px;
+        border-radius: 12px !important;
+        font-weight: 750;
+    }
+    div[data-testid="stCameraInput"] {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+}
+</style>

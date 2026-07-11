@@ -1,0 +1,23 @@
+# Ambiente Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Banco local e arquivos gerados
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+uploads/
+exports/
+
+# Secrets reais
+.streamlit/secrets.toml
+.env
+
+# Sistema/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
