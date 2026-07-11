@@ -3,6 +3,52 @@ from database.db import get_conn
 from services.utils import normalizar_texto
 
 
+def _row_get(row, key, default=None):
+    """Acessa linhas SQLite/libSQL por nome com fallback por índice.
+
+    No SQLite local, row['campo'] funciona. No Turso/libSQL, algumas
+    respostas podem vir como tuplas. Esse helper evita erro do tipo:
+    tuple indices must be integers or slices, not str.
+    """
+    if row is None:
+        return default
+    try:
+        return row[key]
+    except Exception:
+        pass
+    index_map = {
+        'id': 0,
+        'nome_padronizado': 1,
+        'marca': 2,
+        'categoria_id': 3,
+        'unidade_padrao': 4,
+        'quantidade_padrao': 5,
+        'ativo': 6,
+        'criado_em': 7,
+        'cnpj': 2,
+    }
+    idx = index_map.get(key)
+    if idx is not None:
+        try:
+            return row[idx]
+        except Exception:
+            return default
+    return default
+
+
+def _row_to_dict(row, columns=None):
+    if row is None:
+        return None
+    if isinstance(row, dict):
+        return row
+    try:
+        return dict(row)
+    except Exception:
+        if columns:
+            return {columns[i]: row[i] for i in range(min(len(columns), len(row)))}
+        return {}
+
+
 def query_df(sql, params=()):
     """Executa SELECT e retorna DataFrame.
 
@@ -247,14 +293,14 @@ def get_or_create_mercado(nome, cnpj='', cidade='', bairro='', uf=''):
                 # Atualiza dados vazios sem duplicar o mercado.
                 conn.execute(
                     "UPDATE mercados SET nome=COALESCE(NULLIF(?,''),nome), cidade=COALESCE(NULLIF(?,''),cidade), bairro=COALESCE(NULLIF(?,''),bairro), uf=COALESCE(NULLIF(?,''),uf) WHERE id=?",
-                    (nome, cidade, bairro, uf, row['id']),
+                    (nome, cidade, bairro, uf, _row_get(row, 'id')),
                 )
-                return int(row['id'])
+                return int(_row_get(row, 'id'))
         row = conn.execute("SELECT * FROM mercados WHERE UPPER(nome) = UPPER(?) LIMIT 1", (nome,)).fetchone()
         if row:
-            if cnpj and not (row['cnpj'] or '').strip():
-                conn.execute("UPDATE mercados SET cnpj=? WHERE id=?", (cnpj, row['id']))
-            return int(row['id'])
+            if cnpj and not (_row_get(row, 'cnpj') or '').strip():
+                conn.execute("UPDATE mercados SET cnpj=? WHERE id=?", (cnpj, _row_get(row, 'id')))
+            return int(_row_get(row, 'id'))
         cur = conn.execute("INSERT INTO mercados (nome, cnpj, cidade, bairro, uf) VALUES (?, ?, ?, ?, ?)", (nome, cnpj, cidade, bairro, uf))
         return int(cur.lastrowid)
 
@@ -398,17 +444,17 @@ def buscar_produto_parecido(nome_produto, unidade=''):
     with get_conn() as conn:
         rows = conn.execute("SELECT id, nome_padronizado, categoria_id, unidade_padrao FROM produtos WHERE ativo = 1").fetchall()
         for row in rows:
-            row_norm = normalizar_texto(row['nome_padronizado'])
+            row_norm = normalizar_texto(_row_get(row, 'nome_padronizado'))
             if row_norm == nome_norm:
-                return dict(row), 1.0
-            score = _score_similaridade(nome_produto, row['nome_padronizado'])
+                return _row_to_dict(row, ['id','nome_padronizado','marca','categoria_id','unidade_padrao','quantidade_padrao','ativo','criado_em']), 1.0
+            score = _score_similaridade(nome_produto, _row_get(row, 'nome_padronizado'))
             # Pequeno bônus quando a unidade bate.
-            if unidade_norm and normalizar_texto(row['unidade_padrao'] or '') == unidade_norm:
+            if unidade_norm and normalizar_texto(_row_get(row, 'unidade_padrao') or '') == unidade_norm:
                 score += 0.08
             if score > best_score:
                 best_score = score
                 best = row
-    return (dict(best), best_score) if best else (None, 0)
+    return (_row_to_dict(best, ['id','nome_padronizado','marca','categoria_id','unidade_padrao','quantidade_padrao','ativo','criado_em']), best_score) if best else (None, 0)
 
 
 def inferir_categoria_id(nome_produto):
@@ -475,35 +521,49 @@ def recategorizar_produtos_sem_categoria():
             "SELECT id, nome_padronizado, categoria_id FROM produtos WHERE ativo = 1"
         ).fetchall()
         for row in rows:
-            categoria_atual = row['categoria_id']
+            categoria_atual = _row_get(row, 'categoria_id')
             if categoria_atual and outros_id and int(categoria_atual) != int(outros_id):
                 continue
-            nova_categoria = inferir_categoria_id(row['nome_padronizado'])
+            nova_categoria = inferir_categoria_id(_row_get(row, 'nome_padronizado'))
             if nova_categoria and (not categoria_atual or int(nova_categoria) != int(categoria_atual)):
-                conn.execute("UPDATE produtos SET categoria_id=? WHERE id=?", (nova_categoria, row['id']))
+                conn.execute("UPDATE produtos SET categoria_id=? WHERE id=?", (nova_categoria, _row_get(row, 'id')))
                 atualizados += 1
     return atualizados
 
 def add_compra_com_itens_nfce(mercado_nome, cnpj, data_compra, valor_total, chave_nfce, url_qrcode, itens, observacoes='', forma_pagamento='', valor_pago=0):
+    """Registra compra NFC-e e todos os itens.
+
+    Se algum item falhar, remove a compra parcial para evitar o problema
+    de compra salva com apenas 1 item.
+    """
     mercado_id = get_or_create_mercado(mercado_nome, cnpj) if mercado_nome or cnpj else None
     status = 'Conferida' if itens else 'Pendente'
     compra_id = add_compra(mercado_id, data_compra, valor_total, chave_nfce, url_qrcode, 'QR Code', status, observacoes, forma_pagamento, valor_pago)
-    for item in itens or []:
-        desc = (item.get('descricao_original') or '').strip()
-        if not desc:
-            continue
-        unidade = item.get('unidade') or 'un'
-        produto_id = get_or_create_produto_simples(desc, unidade)
-        add_item(
-            compra_id,
-            desc,
-            produto_id,
-            float(item.get('quantidade') or 1),
-            unidade,
-            float(item.get('valor_unitario') or 0),
-            float(item.get('valor_total') or 0),
-            float(item.get('desconto') or 0),
-        )
+    try:
+        for item in itens or []:
+            desc = (item.get('descricao_original') or '').strip()
+            if not desc:
+                continue
+            unidade = item.get('unidade') or 'un'
+            produto_id = get_or_create_produto_simples(desc, unidade)
+            add_item(
+                compra_id,
+                desc,
+                produto_id,
+                float(item.get('quantidade') or 1),
+                unidade,
+                float(item.get('valor_unitario') or 0),
+                float(item.get('valor_total') or 0),
+                float(item.get('desconto') or 0),
+            )
+    except Exception:
+        # Evita registro parcial quando o banco online falha no meio do loop.
+        try:
+            execute("DELETE FROM itens_compra WHERE compra_id=?", (compra_id,))
+            execute("DELETE FROM compras WHERE id=?", (compra_id,))
+        except Exception:
+            pass
+        raise
     return compra_id
 
 

@@ -15,6 +15,7 @@ def _value_from_mapping(mapping, *keys):
     aliases = {
         "TURSO_DATABASE_URL": ["TURSO_DATABASE_URL", "database_url", "url", "db_url"],
         "TURSO_AUTH_TOKEN": ["TURSO_AUTH_TOKEN", "auth_token", "token"],
+        "APP_DATABASE_MODE": ["APP_DATABASE_MODE", "app_database_mode", "database_mode", "mode"],
     }
     for key in keys:
         for alias in aliases.get(key, [key]):
@@ -72,14 +73,24 @@ def _get_secret_value(*keys):
 
 
 def get_db_mode():
-    """Retorna 'turso' quando as credenciais foram configuradas; caso contrário, 'sqlite'."""
+    """Retorna o modo de banco.
+
+    Use app_database_mode = "sqlite" para validações offline rápidas no PC.
+    Use app_database_mode = "turso" no Streamlit Cloud/celular.
+    Se não informar, escolhe Turso quando URL+token existirem.
+    """
+    explicit_mode = (_get_secret_value("APP_DATABASE_MODE") or "").strip().lower()
+    if explicit_mode in ("sqlite", "local"):
+        return "sqlite"
+    if explicit_mode in ("turso", "online"):
+        return "turso"
     url = _get_secret_value("TURSO_DATABASE_URL")
     token = _get_secret_value("TURSO_AUTH_TOKEN")
     return "turso" if url and token else "sqlite"
 
 
 def get_db_label():
-    return "Turso online" if get_db_mode() == "turso" else "SQLite local"
+    return "Turso online" if get_db_mode() == "turso" else "SQLite local rápido"
 
 
 @contextmanager

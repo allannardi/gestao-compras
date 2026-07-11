@@ -106,7 +106,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.4.8 • Online mobile")
+    st.sidebar.caption("v0.5 • Layout mobile")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -180,59 +180,65 @@ def _safe_html(value):
     return html.escape(str(value if value is not None else ""))
 
 
+
 def render_tabela_conferencia_nf(itens):
-    """Renderiza os itens da prévia NFC-e no visual padrão do sistema."""
+    """Renderiza os itens da prévia NFC-e em cards mobile-first."""
     if not itens:
         return
-    widths = [3.0, 0.9, 0.9, 1.25, 1.25]
-    labels = ["Descrição", "QTD", "Unidade", "Valor Unitário", "Valor Total"]
-    header_cols = st.columns(widths)
-    for idx, (col, label) in enumerate(zip(header_cols, labels)):
-        align = "left" if idx == 0 else "center"
-        col.markdown(f"<div class='table-header table-{align}'>{label}</div>", unsafe_allow_html=True)
-    for i, item in enumerate(itens):
-        cols = st.columns(widths)
+    total = 0.0
+    st.markdown('<div class="mobile-list-title">Itens encontrados na NF</div>', unsafe_allow_html=True)
+    for idx, item in enumerate(itens, start=1):
         desc = _safe_html(item.get("descricao_original") or "-")
         unidade = _safe_html(item.get("unidade") or "-")
         qtd = qtd_br(item.get("quantidade") or 0)
         valor_unitario = brl(float(item.get("valor_unitario") or 0))
-        valor_total = brl(float(item.get("valor_total") or 0))
-        cols[0].markdown(f"<div class='table-cell'>{desc}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div class='table-cell table-center'>{qtd}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div class='table-cell table-center'>{unidade}</div>", unsafe_allow_html=True)
-        cols[3].markdown(f"<div class='table-cell table-center'>{valor_unitario}</div>", unsafe_allow_html=True)
-        cols[4].markdown(f"<div class='table-cell table-center table-strong'>{valor_total}</div>", unsafe_allow_html=True)
-
+        valor_total_float = float(item.get("valor_total") or 0)
+        valor_total = brl(valor_total_float)
+        total += valor_total_float
+        st.markdown(f"""
+<div class="mobile-item-card nf-preview-card">
+  <div class="mobile-card-topline">
+    <div class="mobile-card-index">#{idx}</div>
+    <div class="mobile-card-title">{desc}</div>
+  </div>
+  <div class="mobile-card-grid">
+    <div><span>QTD</span><strong>{qtd}</strong></div>
+    <div><span>Un.</span><strong>{unidade}</strong></div>
+    <div><span>Unitário</span><strong>{valor_unitario}</strong></div>
+    <div><span>Total</span><strong class="money-strong">{valor_total}</strong></div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+    st.markdown(f"<div class='mobile-total-strip'>Soma dos itens lidos: <strong>{brl(total)}</strong></div>", unsafe_allow_html=True)
 
 
 def render_itens_compra_modal(itens):
-    """Renderiza os itens do modal de detalhes da compra no visual padrão."""
+    """Renderiza os itens do modal de detalhes da compra em cards mobile-first."""
     if itens is None or itens.empty:
         return
     df = itens.copy()
-    widths = [2.3, 2.4, 0.75, 0.85, 1.2, 1.2, 1.25]
-    labels = ["Produto", "Descrição", "QTD", "Unidade", "Valor Unitário", "Valor Total", "Categoria"]
-    header_cols = st.columns(widths)
-    for idx, (col, label) in enumerate(zip(header_cols, labels)):
-        align = "left" if idx in (0, 1, 6) else "center"
-        col.markdown(f"<div class='table-header table-{align}'>{label}</div>", unsafe_allow_html=True)
-
-    for _, row in df.iterrows():
-        cols = st.columns(widths)
-        produto = _safe_html(row.get("produto") or "-")
+    st.markdown('<div class="mobile-list-title">Itens desta compra</div>', unsafe_allow_html=True)
+    for idx, row in df.iterrows():
+        produto = _safe_html(row.get("produto") or row.get("descricao_original") or "-")
         desc = _safe_html(row.get("descricao_original") or "-")
         qtd = qtd_br(row.get("quantidade") or 0)
         unidade = _safe_html(row.get("unidade") or "-")
         valor_unitario = brl(float(row.get("valor_unitario") or 0))
         valor_total = brl(float(row.get("valor_total") or 0))
         categoria = _safe_html(row.get("categoria") or "Sem categoria")
-        cols[0].markdown(f"<div class='table-cell'>{produto}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div class='table-cell'>{desc}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div class='table-cell table-center'>{qtd}</div>", unsafe_allow_html=True)
-        cols[3].markdown(f"<div class='table-cell table-center'>{unidade}</div>", unsafe_allow_html=True)
-        cols[4].markdown(f"<div class='table-cell table-center'>{valor_unitario}</div>", unsafe_allow_html=True)
-        cols[5].markdown(f"<div class='table-cell table-center table-strong'>{valor_total}</div>", unsafe_allow_html=True)
-        cols[6].markdown(f"<div class='table-cell'>{categoria}</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+<div class="mobile-item-card purchase-item-card">
+  <div class="mobile-card-title">{produto}</div>
+  <div class="mobile-card-subtitle">{desc}</div>
+  <div class="mobile-card-grid">
+    <div><span>QTD</span><strong>{qtd}</strong></div>
+    <div><span>Un.</span><strong>{unidade}</strong></div>
+    <div><span>Unitário</span><strong>{valor_unitario}</strong></div>
+    <div><span>Total</span><strong class="money-strong">{valor_total}</strong></div>
+  </div>
+  <div class="mobile-card-footer">Categoria: <strong>{categoria}</strong></div>
+</div>
+""", unsafe_allow_html=True)
 
 def render_top_produtos_dashboard(top):
     widths = [2.8, 0.85, 0.85, 1.25, 0.85, 1.25]
@@ -1013,6 +1019,7 @@ def _abrir_modal_detalhes(compra_id):
             rerun()
 
 
+
 def page_compras():
     header()
     st.markdown('<div class="section-title">Compras</div>', unsafe_allow_html=True)
@@ -1027,28 +1034,45 @@ def page_compras():
         return
 
     st.caption("Compras registradas em ordem decrescente pela data da compra.")
-
-    header_cols = st.columns([0.5, 1.1, 1.1, 2.0, 1.0, 1.5, 0.9])
-    labels = ["ID", "Data da Compra", "Valor Total", "Supermercado", "Origem", "Forma de Pagamento", "Detalhes"]
-    for col, label in zip(header_cols, labels):
-        col.markdown(f"<div class='table-header'>{label}</div>", unsafe_allow_html=True)
+    st.markdown('<div class="mobile-list-title">Lista de compras</div>', unsafe_allow_html=True)
 
     for _, row in compras.iterrows():
-        cols = st.columns([0.5, 1.1, 1.1, 2.0, 1.0, 1.5, 0.9])
         compra_id = int(row["id"])
-        cols[0].markdown(f"<div class='table-cell'>{compra_id}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div class='table-cell'>{_format_date_br(row['data_compra'])}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div class='table-cell'>{brl(float(row['valor_total'] or 0))}</div>", unsafe_allow_html=True)
-        cols[3].markdown(f"<div class='table-cell'>{row['mercado'] or 'Sem supermercado'}</div>", unsafe_allow_html=True)
-        cols[4].markdown(f"<div class='table-cell'>{row['origem'] or '-'}</div>", unsafe_allow_html=True)
-        cols[5].markdown(f"<div class='table-cell'>{row.get('forma_pagamento', '') if hasattr(row, 'get') else (row['forma_pagamento'] if 'forma_pagamento' in row.index else '')}</div>", unsafe_allow_html=True)
-        if cols[6].button("Detalhes", key=f"detalhes_compra_{compra_id}", use_container_width=True):
+        mercado = _safe_html(row.get("mercado") or "Sem supermercado")
+        data_br = _format_date_br(row.get("data_compra"))
+        valor = brl(float(row.get("valor_total") or 0))
+        origem = _safe_html(row.get("origem") or "-")
+        forma = _safe_html(row.get("forma_pagamento") or "-")
+        itens_info = ""
+        try:
+            resumo = db.get_resumo_itens_compra(compra_id)
+            itens_info = f"{int(resumo.get('qtd_itens') or 0)} itens"
+        except Exception:
+            itens_info = ""
+
+        st.markdown(f"""
+<div class="purchase-card">
+  <div class="purchase-card-header">
+    <div>
+      <div class="purchase-market">{mercado}</div>
+      <div class="purchase-meta">{data_br} · {forma}</div>
+    </div>
+    <div class="purchase-value">{valor}</div>
+  </div>
+  <div class="purchase-card-footer">
+    <span>ID {compra_id}</span>
+    <span>{origem}</span>
+    <span>{itens_info}</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+        if st.button("Ver detalhes", key=f"detalhes_compra_{compra_id}", use_container_width=True):
             st.session_state.detalhe_compra_id = compra_id
             rerun()
+        st.markdown("<div class='mobile-card-spacer'></div>", unsafe_allow_html=True)
 
     if st.session_state.get("detalhe_compra_id"):
         _abrir_modal_detalhes(int(st.session_state.detalhe_compra_id))
-
 
 def page_itens():
     header()
