@@ -77,7 +77,7 @@ def require_login():
     st.markdown('<div class="subtitle">Acesso protegido para uso online.</div>', unsafe_allow_html=True)
     with st.container(border=True):
         senha_digitada = st.text_input("Senha de acesso", type="password")
-        entrar = st.button("Entrar", type="primary", use_container_width=True)
+        entrar = st.button("Entrar", type="primary", width="stretch")
         if entrar:
             if hmac.compare_digest(str(senha_digitada), str(senha_app)):
                 st.session_state.authenticated = True
@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.9 • Cards mobile")
+    st.sidebar.caption("v0.5.10 • Cards mobile")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -126,13 +126,13 @@ def sidebar():
     for i, p in enumerate(pages):
         label = "Adicionar Compra" if p == "Adicionar Compra" else p
         btn_type = "primary" if p == "Adicionar Compra" else "secondary"
-        if st.sidebar.button(label, use_container_width=True, key=f"nav_{i}_{p}", type=btn_type):
+        if st.sidebar.button(label, width="stretch", key=f"nav_{i}_{p}", type=btn_type):
             st.session_state.page = p
     st.sidebar.divider()
     st.sidebar.caption(f"Banco: {get_db_label()}")
     st.sidebar.caption("Uso recomendado: abrir online pelo Safari e adicionar à Tela de Início.")
     if get_app_password():
-        if st.sidebar.button("Sair", use_container_width=True):
+        if st.sidebar.button("Sair", width="stretch"):
             st.session_state.authenticated = False
             st.rerun()
 
@@ -274,7 +274,7 @@ def render_mobile_record_card(title, subtitle=None, fields=None, footer=None, bu
 </div>
 """, unsafe_allow_html=True)
     if button_label and button_key:
-        return st.button(button_label, key=button_key, use_container_width=True)
+        return st.button(button_label, key=button_key, width="stretch")
     return False
 
 def render_top_produtos_dashboard(top):
@@ -353,7 +353,7 @@ def page_dashboard():
             )
             fig.update_layout(height=360, xaxis_title=None, showlegend=False)
             _prepare_plotly_currency(fig)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
         else:
             st.caption("Ainda não há itens para gerar este gráfico.")
 
@@ -381,7 +381,7 @@ def page_dashboard():
             paper_bgcolor="rgba(0,0,0,0)",
             font=dict(family="Inter", color="#0F172A"),
         )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     st.markdown('<div class="section-title">Evolução mensal</div>', unsafe_allow_html=True)
     mensal = compras.groupby("mes")["valor_total"].sum().reset_index()
@@ -395,7 +395,7 @@ def page_dashboard():
     )
     fig.update_layout(height=340, xaxis_title="Mês", showlegend=False)
     _prepare_plotly_currency(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
     st.markdown('<div class="section-title">Top produtos do mês</div>', unsafe_allow_html=True)
     if not itens_mes.empty:
@@ -500,18 +500,18 @@ def render_compra_registrada(compra_id):
         if itens is not None and not itens.empty:
             st.dataframe(
                 itens[["descricao_original", "produto", "quantidade", "unidade", "valor_unitario", "valor_total", "categoria"]],
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
         else:
             st.info("Compra criada sem itens. Complete os dados depois pela revisão da compra.")
 
     c1, c2 = st.columns(2)
-    if c1.button("Adicionar outra compra", use_container_width=True):
+    if c1.button("Adicionar outra compra", width="stretch"):
         st.session_state.page = "Adicionar Compra"
         st.session_state.pop("compra_registrada_id", None)
         rerun()
-    if c2.button("Ver lista de compras", use_container_width=True):
+    if c2.button("Ver lista de compras", width="stretch"):
         st.session_state.pop("compra_registrada_id", None)
         st.session_state.page = "Compras"
         rerun()
@@ -534,7 +534,7 @@ def preparar_preview_nfce(qr_texto, key_prefix, obs_extra=""):
         existente = db.get_compra_por_chave(chave)
         if existente:
             st.warning(f"Esta NFC-e já está registrada no sistema como compra ID {int(existente['id'])}. Para evitar duplicidade, a confirmação foi bloqueada.")
-            if st.button("Abrir compra já registrada", use_container_width=True, key=f"{key_prefix}_abrir_existente"):
+            if st.button("Abrir compra já registrada", width="stretch", key=f"{key_prefix}_abrir_existente"):
                 st.session_state.compra_registrada_id = int(existente["id"])
                 st.session_state.page = "Compras"
                 try:
@@ -581,7 +581,7 @@ def preparar_preview_nfce(qr_texto, key_prefix, obs_extra=""):
         st.text_area("Conteúdo do QR Code", value=qr_texto or "", height=90, key=f"{key_prefix}_raw")
 
     texto_botao = "✅ Confirmar e registrar esta compra" if itens_confirmados else "✅ Criar compra pendente para completar depois"
-    if st.button(texto_botao, use_container_width=True, key=f"{key_prefix}_confirmar"):
+    if st.button(texto_botao, width="stretch", key=f"{key_prefix}_confirmar"):
         obs = "Criada a partir da leitura do QR Code NFC-e."
         if obs_extra:
             obs += f" {obs_extra}"
@@ -617,14 +617,14 @@ def page_capturar_nf():
 
     st.markdown("#### Ler QR-CODE da NF")
     st.caption("Tire uma foto aproximada do QR Code impresso na nota fiscal.")
-    if st.button("Ler QR-CODE da NF", use_container_width=True, key="btn_ler_qrcode_nf"):
+    if st.button("Ler QR-CODE da NF", width="stretch", key="btn_ler_qrcode_nf"):
         st.session_state.mostrar_camera_qr = True
         st.session_state.mostrar_camera_nf = False
 
     foto_qr = None
     if st.session_state.get("mostrar_camera_qr"):
         foto_qr = st.camera_input("Fotografar QR Code da NF", key="camera_qr_nf")
-        if st.button("Fechar câmera do QR Code", use_container_width=True, key="btn_fechar_camera_qr"):
+        if st.button("Fechar câmera do QR Code", width="stretch", key="btn_fechar_camera_qr"):
             st.session_state.mostrar_camera_qr = False
             rerun()
 
@@ -650,13 +650,13 @@ def page_capturar_nf():
 
     st.markdown("#### Tirar foto da NF")
     st.caption("Use esta opção apenas quando a leitura do QR Code não funcionar. Ela cria uma compra pendente para completar depois.")
-    if st.button("Tirar foto da NF", use_container_width=True, key="btn_tirar_foto_nf"):
+    if st.button("Tirar foto da NF", width="stretch", key="btn_tirar_foto_nf"):
         st.session_state.mostrar_camera_nf = True
         st.session_state.mostrar_camera_qr = False
 
     if st.session_state.get("mostrar_camera_nf"):
         foto_nf = st.camera_input("Fotografar nota fiscal completa", key="camera_nf")
-        if st.button("Fechar câmera da NF", use_container_width=True, key="btn_fechar_camera_nf"):
+        if st.button("Fechar câmera da NF", width="stretch", key="btn_fechar_camera_nf"):
             st.session_state.mostrar_camera_nf = False
             rerun()
         if foto_nf is not None:
@@ -665,7 +665,7 @@ def page_capturar_nf():
             c1, c2 = st.columns(2)
             data_compra = c1.date_input("Data da compra", value=date.today(), key="foto_data_compra")
             valor_total = c2.number_input("Valor total", min_value=0.0, value=0.0, step=1.0, format="%.2f", key="foto_valor_total")
-            if st.button("Criar compra pendente com esta foto", use_container_width=True):
+            if st.button("Criar compra pendente com esta foto", width="stretch"):
                 obs = f"Criada a partir de foto da nota. Imagem salva em: {caminho}. OCR será tratado em versão futura."
                 compra_id = db.add_compra(None, str(data_compra), valor_total, "", "", "OCR", "Pendente", obs)
                 st.success(f"Compra pendente criada. ID {compra_id}. Agora revise em Compras e adicione os itens.")
@@ -688,7 +688,7 @@ def _render_form_categoria(categoria_id=None):
         ativo = True if row is None else bool(row["ativo"])
         if row is not None:
             ativo = st.checkbox("Categoria ativa", value=ativo)
-        salvar = st.form_submit_button("Salvar categoria", use_container_width=True)
+        salvar = st.form_submit_button("Salvar categoria", width="stretch")
         if salvar:
             if not nome.strip():
                 st.warning("Informe o nome da categoria.")
@@ -713,7 +713,7 @@ def _abrir_modal_categoria(categoria_id=None):
         @st.dialog(titulo, width="large")
         def _dialog():
             _render_form_categoria(categoria_id)
-            if st.button("Fechar", use_container_width=True, key=f"fechar_categoria_{categoria_id or 'nova'}"):
+            if st.button("Fechar", width="stretch", key=f"fechar_categoria_{categoria_id or 'nova'}"):
                 st.session_state.pop("adicionar_categoria", None)
                 st.session_state.pop("editar_categoria_id", None)
                 rerun()
@@ -748,7 +748,7 @@ def page_categorias():
                 rerun()
 
     st.markdown("")
-    if st.button("Adicionar categoria", use_container_width=True):
+    if st.button("Adicionar categoria", width="stretch"):
         st.session_state.adicionar_categoria = True
         rerun()
 
@@ -779,7 +779,7 @@ def _render_form_mercado(mercado_id=None):
         ativo = True if row is None else bool(row["ativo"])
         if row is not None:
             ativo = st.checkbox("Supermercado ativo", value=ativo)
-        salvar = st.form_submit_button("Salvar supermercado", use_container_width=True)
+        salvar = st.form_submit_button("Salvar supermercado", width="stretch")
         if salvar:
             if not nome.strip():
                 st.warning("Informe o nome do supermercado.")
@@ -804,7 +804,7 @@ def _abrir_modal_mercado(mercado_id=None):
         @st.dialog(titulo, width="large")
         def _dialog():
             _render_form_mercado(mercado_id)
-            if st.button("Fechar", use_container_width=True, key=f"fechar_mercado_{mercado_id or 'novo'}"):
+            if st.button("Fechar", width="stretch", key=f"fechar_mercado_{mercado_id or 'novo'}"):
                 st.session_state.pop("adicionar_mercado", None)
                 st.session_state.pop("editar_mercado_id", None)
                 rerun()
@@ -840,7 +840,7 @@ def page_mercados():
                 rerun()
 
     st.markdown("")
-    if st.button("Adicionar supermercado", use_container_width=True):
+    if st.button("Adicionar supermercado", width="stretch"):
         st.session_state.adicionar_mercado = True
         rerun()
 
@@ -877,7 +877,7 @@ def _render_edit_produto_modal(produto_id):
         qtd_e = c5.number_input("Quantidade padrão", min_value=0.0, value=float(row["quantidade_padrao"] or 1), step=0.1)
         ativo_e = st.checkbox("Produto ativo", value=bool(row["ativo"]))
 
-        salvar = st.form_submit_button("Salvar alterações", use_container_width=True)
+        salvar = st.form_submit_button("Salvar alterações", width="stretch")
         if salvar:
             if not nome_e.strip():
                 st.warning("Informe o nome do produto.")
@@ -893,14 +893,14 @@ def _abrir_modal_produto(produto_id):
         @st.dialog("Editar Produto", width="large")
         def _dialog():
             _render_edit_produto_modal(produto_id)
-            if st.button("Fechar", use_container_width=True):
+            if st.button("Fechar", width="stretch"):
                 st.session_state.pop("editar_produto_id", None)
                 rerun()
         _dialog()
     else:
         st.markdown('<div class="section-title">Editar Produto</div>', unsafe_allow_html=True)
         _render_edit_produto_modal(produto_id)
-        if st.button("Fechar edição", use_container_width=True):
+        if st.button("Fechar edição", width="stretch"):
             st.session_state.pop("editar_produto_id", None)
             rerun()
 
@@ -921,7 +921,7 @@ def page_produtos():
         ])
         c1, c2 = st.columns([1, 3])
         with c1:
-            if st.button("Reclassificar produtos", use_container_width=True):
+            if st.button("Reclassificar produtos", width="stretch"):
                 atualizados = db.recategorizar_produtos_sem_categoria()
                 st.success(f"{atualizados} produto(s) reclassificado(s).")
                 rerun()
@@ -937,10 +937,10 @@ def page_produtos():
         st.session_state.filtro_produtos = "Todos"
 
     f1, f2, f3 = st.columns([1, 1, 3])
-    if f1.button("Todos", use_container_width=True, type="primary" if st.session_state.filtro_produtos == "Todos" else "secondary"):
+    if f1.button("Todos", width="stretch", type="primary" if st.session_state.filtro_produtos == "Todos" else "secondary"):
         st.session_state.filtro_produtos = "Todos"
         rerun()
-    if f2.button("Para revisar", use_container_width=True, type="primary" if st.session_state.filtro_produtos == "Para revisar" else "secondary"):
+    if f2.button("Para revisar", width="stretch", type="primary" if st.session_state.filtro_produtos == "Para revisar" else "secondary"):
         st.session_state.filtro_produtos = "Para revisar"
         rerun()
     busca = f3.text_input("Buscar produto", placeholder="Digite parte do nome, marca ou categoria", label_visibility="collapsed")
@@ -1054,7 +1054,7 @@ def _abrir_modal_detalhes(compra_id):
     """
     st.markdown('<div class="section-title">Detalhes da Compra</div>', unsafe_allow_html=True)
     _render_detalhes_compra(compra_id)
-    if st.button("Fechar detalhes", use_container_width=True, key=f"fechar_detalhes_inline_{compra_id}"):
+    if st.button("Fechar detalhes", width="stretch", key=f"fechar_detalhes_inline_{compra_id}"):
         st.session_state.pop("detalhe_compra_id", None)
         rerun()
 
@@ -1066,11 +1066,11 @@ def page_compras():
 
     if st.session_state.get("detalhe_compra_id"):
         compra_id = int(st.session_state.detalhe_compra_id)
-        if st.button("← Voltar para compras", use_container_width=True, key="voltar_lista_compras_topo"):
+        if st.button("← Voltar para compras", width="stretch", key="voltar_lista_compras_topo"):
             st.session_state.pop("detalhe_compra_id", None)
             rerun()
         _render_detalhes_compra(compra_id)
-        if st.button("Fechar detalhes", use_container_width=True, key="voltar_lista_compras_rodape"):
+        if st.button("Fechar detalhes", width="stretch", key="voltar_lista_compras_rodape"):
             st.session_state.pop("detalhe_compra_id", None)
             rerun()
         return
@@ -1117,7 +1117,7 @@ def page_compras():
   </div>
 </div>
 """, unsafe_allow_html=True)
-        if st.button("Ver detalhes", key=f"detalhes_compra_{compra_id}", use_container_width=True):
+        if st.button("Ver detalhes", key=f"detalhes_compra_{compra_id}", width="stretch"):
             st.session_state.detalhe_compra_id = compra_id
             rerun()
         st.markdown("<div class='mobile-card-spacer'></div>", unsafe_allow_html=True)
@@ -1155,7 +1155,7 @@ def page_itens():
             rerun()
 
     itens = db.get_itens(compra_id)
-    st.dataframe(itens, use_container_width=True, hide_index=True)
+    st.dataframe(itens, width="stretch", hide_index=True)
     if not itens.empty:
         item_opts = {f"ID {r['id']} • {r['descricao_original'] or r['produto'] or 'Item'} • {brl(r['valor_total'])}": int(r['id']) for _, r in itens.iterrows()}
         with st.expander("Excluir item"):
@@ -1269,7 +1269,7 @@ def page_historico():
             )
             fig.update_yaxes(tickprefix="R$ ", tickformat=",.2f", gridcolor="#E2E8F0")
             fig.update_xaxes(tickformat="%d/%m/%Y", gridcolor="#F1F5F9")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
             if len(df_chart) >= 2:
                 first = float(df_chart.iloc[0]["valor_unitario"] or 0)
                 last = float(df_chart.iloc[-1]["valor_unitario"] or 0)
@@ -1317,7 +1317,7 @@ def page_exportar():
         data=excel,
         file_name=f"gestao_compras_export_{date.today().isoformat()}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
+        width="stretch",
     )
 
 
@@ -1330,7 +1330,7 @@ def page_manutencao():
     st.markdown("#### Limpar compras de teste")
     st.caption("Apaga compras e itens registrados, mantendo produtos, supermercados e categorias.")
     confirmar = st.text_input("Digite APAGAR para confirmar", key="confirmar_limpar_compras")
-    if st.button("Limpar compras de teste", use_container_width=True, disabled=(confirmar.strip().upper() != "APAGAR")):
+    if st.button("Limpar compras de teste", width="stretch", disabled=(confirmar.strip().upper() != "APAGAR")):
         try:
             db.limpar_compras_teste()
             for key in ("detalhe_compra_id", "compra_registrada_id", "nfce_preview", "qr_text"):
@@ -1346,7 +1346,7 @@ def page_manutencao():
     st.markdown("#### Zerar banco de testes")
     st.caption("Apaga compras, itens, produtos e supermercados. Mantém/recria categorias padrão.")
     confirmar_zerar = st.text_input("Digite ZERAR para confirmar", key="confirmar_zerar_banco")
-    if st.button("Zerar banco de testes", use_container_width=True, disabled=(confirmar_zerar.strip().upper() != "ZERAR")):
+    if st.button("Zerar banco de testes", width="stretch", disabled=(confirmar_zerar.strip().upper() != "ZERAR")):
         try:
             db.zerar_banco_teste()
             for key in ("detalhe_compra_id", "compra_registrada_id", "nfce_preview", "qr_text"):

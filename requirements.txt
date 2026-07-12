@@ -3,8 +3,8 @@ pandas
 openpyxl
 plotly
 Pillow
-numpy
-opencv-python-headless
+numpy<2.3
+opencv-python-headless==4.10.0.84
 requests
 beautifulsoup4
 lxml
