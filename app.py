@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.7 • Mobile online")
+    st.sidebar.caption("v0.5.8 • Cards compactos")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -186,7 +186,7 @@ def _safe_html(value):
 
 
 def render_tabela_conferencia_nf(itens):
-    """Renderiza os itens da prévia NFC-e em cards mobile-first."""
+    """Renderiza os itens da prévia NFC-e em cards compactos mobile-first."""
     if not itens:
         return
     total = 0.0
@@ -200,24 +200,21 @@ def render_tabela_conferencia_nf(itens):
         valor_total = brl(valor_total_float)
         total += valor_total_float
         st.markdown(f"""
-<div class="mobile-item-card nf-preview-card">
-  <div class="mobile-card-topline">
-    <div class="mobile-card-index">#{idx}</div>
-    <div class="mobile-card-title">{desc}</div>
-  </div>
-  <div class="mobile-card-grid">
-    <div><span>QTD</span><strong>{qtd}</strong></div>
+<div class="compact-item-card nf-preview-card">
+  <div class="compact-item-title"><span class="compact-item-index">#{idx}</span>{desc}</div>
+  <div class="compact-item-row">
+    <div><span>Qtd</span><strong>{qtd}</strong></div>
     <div><span>Un.</span><strong>{unidade}</strong></div>
-    <div><span>Unitário</span><strong>{valor_unitario}</strong></div>
+    <div><span>Valor Unit.</span><strong>{valor_unitario}</strong></div>
     <div><span>Total</span><strong class="money-strong">{valor_total}</strong></div>
   </div>
 </div>
 """, unsafe_allow_html=True)
-    st.markdown(f"<div class='mobile-total-strip'>Soma dos itens lidos: <strong>{brl(total)}</strong></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='mobile-total-strip compact-total-strip'>Soma dos itens lidos: <strong>{brl(total)}</strong></div>", unsafe_allow_html=True)
 
 
 def render_itens_compra_modal(itens):
-    """Renderiza os itens da compra em cards mobile-first, aceitando DataFrame ou lista."""
+    """Renderiza os itens da compra em cards compactos mobile-first, aceitando DataFrame ou lista."""
     if itens is None:
         return
 
@@ -241,17 +238,18 @@ def render_itens_compra_modal(itens):
         valor_unitario = brl(float(row.get("valor_unitario") or 0))
         valor_total = brl(float(row.get("valor_total") or 0))
         categoria = _safe_html(row.get("categoria") or "Sem categoria")
+        subtitle_html = "" if produto.lower() == desc.lower() else f'<div class="compact-item-subtitle">{desc}</div>'
         st.markdown(f"""
-<div class="mobile-item-card purchase-item-card">
-  <div class="mobile-card-title">{produto}</div>
-  <div class="mobile-card-subtitle">{desc}</div>
-  <div class="mobile-card-grid">
-    <div><span>QTD</span><strong>{qtd}</strong></div>
+<div class="compact-item-card purchase-item-card">
+  <div class="compact-item-title">{produto}</div>
+  {subtitle_html}
+  <div class="compact-item-row">
+    <div><span>Qtd</span><strong>{qtd}</strong></div>
     <div><span>Un.</span><strong>{unidade}</strong></div>
-    <div><span>Unitário</span><strong>{valor_unitario}</strong></div>
+    <div><span>Valor Unit.</span><strong>{valor_unitario}</strong></div>
     <div><span>Total</span><strong class="money-strong">{valor_total}</strong></div>
   </div>
-  <div class="mobile-card-footer">Categoria: <strong>{categoria}</strong></div>
+  <div class="compact-item-category">Categoria: <strong>{categoria}</strong></div>
 </div>
 """, unsafe_allow_html=True)
 

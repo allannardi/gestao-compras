@@ -264,3 +264,89 @@ button[kind="secondary"] {
     .purchase-value { font-size: 1.25rem; }
 }
 </style>
+
+
+<style>
+/* v0.5.8 - cards compactos para itens em telas mobile */
+.compact-item-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 13px;
+    padding: 10px 11px;
+    margin: 8px 0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.035);
+}
+.compact-item-title {
+    color: #0F172A;
+    font-size: .9rem;
+    line-height: 1.22;
+    font-weight: 850;
+    margin-bottom: 7px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.compact-item-index {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-radius: 999px;
+    padding: 3px 7px;
+    font-size: .72rem;
+    font-weight: 850;
+    flex: 0 0 auto;
+}
+.compact-item-subtitle {
+    color: #64748B;
+    font-size: .72rem;
+    line-height: 1.25;
+    margin-top: -3px;
+    margin-bottom: 7px;
+}
+.compact-item-row {
+    display: grid;
+    grid-template-columns: .75fr .75fr 1.2fr 1fr;
+    gap: 6px;
+}
+.compact-item-row div {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 9px;
+    padding: 7px 5px;
+    text-align: center;
+    min-width: 0;
+}
+.compact-item-row span {
+    display: block;
+    color: #64748B;
+    font-size: .58rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+.compact-item-row strong {
+    color: #0F172A;
+    font-size: .76rem;
+    font-weight: 850;
+    white-space: nowrap;
+}
+.compact-item-category {
+    color: #64748B;
+    font-size: .70rem;
+    margin-top: 6px;
+}
+.compact-total-strip {
+    padding: 10px 12px;
+    margin: 10px 0 12px;
+    font-size: .9rem;
+}
+@media (max-width: 640px) {
+    .compact-item-card { padding: 9px 10px; margin: 7px 0; border-radius: 12px; }
+    .compact-item-title { font-size: .86rem; margin-bottom: 6px; }
+    .compact-item-row { grid-template-columns: .65fr .65fr 1.15fr 1fr; gap: 5px; }
+    .compact-item-row div { padding: 6px 4px; border-radius: 8px; }
+    .compact-item-row span { font-size: .53rem; }
+    .compact-item-row strong { font-size: .70rem; }
+}
+</style>
