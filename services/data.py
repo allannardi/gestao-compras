@@ -37,15 +37,50 @@ def _row_get(row, key, default=None):
 
 
 def _row_to_dict(row, columns=None):
+    """Converte linhas SQLite/libSQL para dict de forma defensiva.
+
+    No SQLite local, dict(sqlite3.Row) normalmente funciona.
+    No Turso/libSQL, algumas linhas podem não ser iteráveis, causando:
+    "object is not iterable". Por isso esta função tenta vários formatos
+    antes de desistir.
+    """
     if row is None:
         return None
     if isinstance(row, dict):
         return row
+
+    # Alguns drivers expõem método próprio.
+    for method_name in ("asdict", "to_dict", "dict"):
+        method = getattr(row, method_name, None)
+        if callable(method):
+            try:
+                data = method()
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                pass
+
+    # sqlite3.Row e objetos parecidos podem expor keys().
+    try:
+        keys = list(row.keys())
+        return {k: row[k] for k in keys}
+    except Exception:
+        pass
+
+    # Fallback com nomes de colunas vindos do cursor.description.
+    if columns:
+        result = {}
+        for i, col in enumerate(columns):
+            try:
+                result[col] = row[i]
+            except Exception:
+                result[col] = None
+        return result
+
+    # Última tentativa: tupla/lista sem nomes.
     try:
         return dict(row)
     except Exception:
-        if columns:
-            return {columns[i]: row[i] for i in range(min(len(columns), len(row)))}
         return {}
 
 
@@ -61,13 +96,7 @@ def query_df(sql, params=()):
         columns = [desc[0] for desc in (cur.description or [])]
         normalized_rows = []
         for row in rows:
-            if isinstance(row, dict):
-                normalized_rows.append(row)
-            else:
-                try:
-                    normalized_rows.append(dict(row))
-                except Exception:
-                    normalized_rows.append({columns[i]: row[i] for i in range(len(columns))})
+            normalized_rows.append(_row_to_dict(row, columns) or {})
         return pd.DataFrame(normalized_rows, columns=columns)
 
 
@@ -75,18 +104,25 @@ def execute(sql, params=()):
     with get_conn() as conn:
         cur = conn.execute(sql, params)
         last_id = getattr(cur, "lastrowid", None)
-        if last_id is not None:
-            return last_id
         try:
-            row = conn.execute("SELECT last_insert_rowid()").fetchone()
-            if row is not None:
-                try:
-                    return row[0]
-                except Exception:
-                    return row["last_insert_rowid()"]
+            if last_id is not None:
+                return int(last_id)
         except Exception:
             pass
-        return None
+        try:
+            row = conn.execute("SELECT last_insert_rowid()").fetchone()
+            data = _row_to_dict(row, ["last_insert_rowid()"] )
+            value = None
+            if data:
+                value = data.get("last_insert_rowid()")
+            if value is None and row is not None:
+                try:
+                    value = row[0]
+                except Exception:
+                    value = None
+            return int(value) if value is not None else None
+        except Exception:
+            return None
 
 
 def get_categorias(ativas=True):
@@ -346,7 +382,7 @@ def sugerir_produto(descricao_original):
             (desc_norm,),
         ).fetchone()
         if row:
-            return dict(row)
+            return _row_to_dict(row, ['id', 'nome_padronizado'])
     return None
 
 
@@ -384,7 +420,15 @@ def get_or_create_mercado(nome, cnpj='', cidade='', bairro='', uf=''):
                 conn.execute("UPDATE mercados SET cnpj=? WHERE id=?", (cnpj, _row_get(row, 'id')))
             return int(_row_get(row, 'id'))
         cur = conn.execute("INSERT INTO mercados (nome, cnpj, cidade, bairro, uf) VALUES (?, ?, ?, ?, ?)", (nome, cnpj, cidade, bairro, uf))
-        return int(cur.lastrowid)
+        last_id = getattr(cur, 'lastrowid', None)
+        try:
+            if last_id is not None:
+                return int(last_id)
+        except Exception:
+            pass
+        row = conn.execute("SELECT last_insert_rowid()").fetchone()
+        data = _row_to_dict(row, ["last_insert_rowid()"] )
+        return int((data or {}).get("last_insert_rowid()") or row[0])
 
 
 
@@ -591,7 +635,15 @@ def get_or_create_produto_simples(nome, unidade='un'):
             "INSERT INTO produtos (nome_padronizado, marca, categoria_id, unidade_padrao, quantidade_padrao) VALUES (?, ?, ?, ?, ?)",
             (nome_padronizado, marca, cat_id, unidade or 'un', 1),
         )
-        return int(cur.lastrowid)
+        last_id = getattr(cur, 'lastrowid', None)
+        try:
+            if last_id is not None:
+                return int(last_id)
+        except Exception:
+            pass
+        row = conn.execute("SELECT last_insert_rowid()").fetchone()
+        data = _row_to_dict(row, ["last_insert_rowid()"] )
+        return int((data or {}).get("last_insert_rowid()") or row[0])
 
 
 def recategorizar_produtos_sem_categoria():
