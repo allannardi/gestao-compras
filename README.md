@@ -179,3 +179,9 @@ Ajuste de dependências para Streamlit Cloud: removidos pins rígidos de versõe
 - Consolida itens idênticos na mesma compra antes da conferência e do registro.
 - Critério: mesma descrição, mesma unidade e mesmo valor unitário.
 - Soma quantidade, valor total e desconto, exibindo apenas uma linha por item idêntico.
+
+
+## v0.5.13
+- Ajuste no fluxo de captura no iPhone: substitui `st.camera_input` por `file_uploader` no fluxo de foto/captura, para permitir que o iOS ofereça a opção **Tirar Foto** e normalmente use a câmera traseira.
+- Mantém leitura de QR Code, upload de imagem e criação de compra pendente por foto da NF.
+- Observação: o Streamlit não permite escolher explicitamente câmera frontal/traseira via `st.camera_input`; por isso o fluxo mobile passa a usar o seletor nativo do iOS.
