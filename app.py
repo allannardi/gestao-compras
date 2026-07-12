@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.6 • Mobile online")
+    st.sidebar.caption("v0.5.7 • Mobile online")
     pages = [
         "Adicionar Compra",
         "Dashboard",

@@ -8,4 +8,3 @@ opencv-python-headless
 requests
 beautifulsoup4
 lxml
-libsql

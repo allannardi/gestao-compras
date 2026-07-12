@@ -93,6 +93,117 @@ def get_db_label():
     return "Turso online" if get_db_mode() == "turso" else "SQLite local rápido"
 
 
+
+class _TursoHttpCursor:
+    def __init__(self, rows=None, columns=None, lastrowid=None):
+        self._rows = rows or []
+        self.description = [(c, None, None, None, None, None, None) for c in (columns or [])]
+        self.lastrowid = lastrowid
+
+    def fetchall(self):
+        return self._rows
+
+    def fetchone(self):
+        return self._rows[0] if self._rows else None
+
+
+def _turso_http_value(value):
+    if value is None:
+        return {"type": "null"}
+    if isinstance(value, bool):
+        return {"type": "integer", "value": "1" if value else "0"}
+    if isinstance(value, int):
+        return {"type": "integer", "value": str(value)}
+    if isinstance(value, float):
+        return {"type": "float", "value": value}
+    return {"type": "text", "value": str(value)}
+
+
+def _turso_cell_to_python(cell):
+    if cell is None:
+        return None
+    if not isinstance(cell, dict):
+        return cell
+    typ = cell.get("type")
+    if typ == "null":
+        return None
+    value = cell.get("value")
+    if typ == "integer":
+        try:
+            return int(value)
+        except Exception:
+            return value
+    if typ == "float":
+        try:
+            return float(value)
+        except Exception:
+            return value
+    if typ == "blob":
+        return value
+    return value
+
+
+class _TursoHttpConnection:
+    """Cliente HTTP simples para Turso/libSQL.
+
+    Evita o pacote nativo `libsql`, que apresentou Segmentation fault no
+    Streamlit Cloud durante interações mobile. Usa somente `requests`, deixando
+    o app mais estável no ambiente online.
+    """
+    def __init__(self, database_url, auth_token):
+        import requests
+        self._requests = requests
+        url = (database_url or "").strip()
+        if url.startswith("libsql://"):
+            url = "https://" + url[len("libsql://"):]
+        self.endpoint = url.rstrip("/") + "/v2/pipeline"
+        self.auth_token = (auth_token or "").strip()
+
+    def execute(self, sql, params=()):
+        params = tuple(params or ())
+        payload = {
+            "requests": [
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": sql,
+                        "args": [_turso_http_value(v) for v in params],
+                    },
+                }
+            ]
+        }
+        headers = {
+            "Authorization": f"Bearer {self.auth_token}",
+            "Content-Type": "application/json",
+        }
+        resp = self._requests.post(self.endpoint, headers=headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("results") or []
+        if not results:
+            return _TursoHttpCursor()
+        first = results[0]
+        if first.get("type") == "error":
+            err = first.get("error") or {}
+            raise RuntimeError(err.get("message") or str(err) or "Erro ao executar SQL no Turso")
+        result = (((first.get("response") or {}).get("result")) or {})
+        cols = [c.get("name") for c in (result.get("cols") or [])]
+        raw_rows = result.get("rows") or []
+        rows = [tuple(_turso_cell_to_python(cell) for cell in row) for row in raw_rows]
+        last_id = result.get("last_insert_rowid")
+        try:
+            last_id = int(last_id) if last_id not in (None, "") else None
+        except Exception:
+            last_id = None
+        return _TursoHttpCursor(rows=rows, columns=cols, lastrowid=last_id)
+
+    def commit(self):
+        return None
+
+    def close(self):
+        return None
+
+
 @contextmanager
 def get_conn():
     """Abre conexão local SQLite ou remota Turso/libSQL.
@@ -102,23 +213,10 @@ def get_conn():
     configurados, usa libsql conectado ao Turso.
     """
     if get_db_mode() == "turso":
-        try:
-            import libsql
-        except Exception as exc:
-            raise RuntimeError(
-                "Modo Turso configurado, mas a biblioteca 'libsql' não está instalada. "
-                "Rode: pip install -r requirements.txt"
-            ) from exc
-        conn = libsql.connect(
-            database=_get_secret_value("TURSO_DATABASE_URL"),
+        conn = _TursoHttpConnection(
+            database_url=_get_secret_value("TURSO_DATABASE_URL"),
             auth_token=_get_secret_value("TURSO_AUTH_TOKEN"),
         )
-        # Algumas versões do libsql aceitam row_factory; se não aceitarem,
-        # o restante do app continua usando pandas para as consultas principais.
-        try:
-            conn.row_factory = sqlite3.Row
-        except Exception:
-            pass
     else:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
