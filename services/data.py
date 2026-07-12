@@ -84,6 +84,16 @@ def _row_to_dict(row, columns=None):
         return {}
 
 
+
+def _safe_int(value, default=None):
+    """Converte para inteiro sem quebrar quando o Turso devolver texto inesperado."""
+    try:
+        if value in (None, ""):
+            return default
+        return int(value)
+    except Exception:
+        return default
+
 def query_df(sql, params=()):
     """Executa SELECT e retorna DataFrame.
 
@@ -569,18 +579,20 @@ def buscar_produto_parecido(nome_produto, unidade=''):
     best_score = 0
     with get_conn() as conn:
         rows = conn.execute("SELECT id, nome_padronizado, categoria_id, unidade_padrao FROM produtos WHERE ativo = 1").fetchall()
+        row_cols = ['id', 'nome_padronizado', 'categoria_id', 'unidade_padrao']
         for row in rows:
-            row_norm = normalizar_texto(_row_get(row, 'nome_padronizado'))
+            row_data = _row_to_dict(row, row_cols) or {}
+            row_norm = normalizar_texto(row_data.get('nome_padronizado') or '')
             if row_norm == nome_norm:
-                return _row_to_dict(row, ['id','nome_padronizado','marca','categoria_id','unidade_padrao','quantidade_padrao','ativo','criado_em']), 1.0
-            score = _score_similaridade(nome_produto, _row_get(row, 'nome_padronizado'))
+                return row_data, 1.0
+            score = _score_similaridade(nome_produto, row_data.get('nome_padronizado') or '')
             # Pequeno bônus quando a unidade bate.
-            if unidade_norm and normalizar_texto(_row_get(row, 'unidade_padrao') or '') == unidade_norm:
+            if unidade_norm and normalizar_texto(row_data.get('unidade_padrao') or '') == unidade_norm:
                 score += 0.08
             if score > best_score:
                 best_score = score
-                best = row
-    return (_row_to_dict(best, ['id','nome_padronizado','marca','categoria_id','unidade_padrao','quantidade_padrao','ativo','criado_em']), best_score) if best else (None, 0)
+                best = row_data
+    return (best, best_score) if best else (None, 0)
 
 
 def inferir_categoria_id(nome_produto):
@@ -596,7 +608,9 @@ def inferir_categoria_id(nome_produto):
 
     parecido, score = buscar_produto_parecido(nome)
     if parecido and score >= 0.42 and parecido.get('categoria_id'):
-        return int(parecido['categoria_id'])
+        categoria_parecida = _safe_int(parecido.get('categoria_id'))
+        if categoria_parecida:
+            return categoria_parecida
 
     for categoria, palavras in REGRAS_CATEGORIA:
         for palavra in palavras:
@@ -621,12 +635,12 @@ def get_or_create_produto_simples(nome, unidade='un'):
 
     sugestao = sugerir_produto(nome)
     if sugestao and sugestao.get('id'):
-        return int(sugestao['id'])
+        return _safe_int(sugestao.get('id'))
 
     nome_padronizado = padronizar_nome_produto(nome, unidade)
     parecido, score = buscar_produto_parecido(nome_padronizado, unidade)
     if parecido and score >= 0.55:
-        return int(parecido['id'])
+        return _safe_int(parecido.get('id'))
 
     cat_id = inferir_categoria_id(nome_padronizado)
     marca = extrair_marca(nome_padronizado)
