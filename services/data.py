@@ -678,6 +678,72 @@ def recategorizar_produtos_sem_categoria():
                 atualizados += 1
     return atualizados
 
+
+def _to_float(value, default=0.0):
+    """Converte valores numéricos de forma segura, aceitando vírgula decimal."""
+    try:
+        if value in (None, ""):
+            return float(default)
+        if isinstance(value, str):
+            value = value.replace("R$", "").replace(".", "").replace(",", ".").strip()
+        return float(value)
+    except Exception:
+        return float(default)
+
+
+def agrupar_itens_identicos_nfce(itens):
+    """Agrupa itens idênticos da mesma NFC-e antes de conferir/salvar.
+
+    Considera idênticos quando descrição, unidade e valor unitário são iguais.
+    Assim, itens repetidos na mesma compra aparecem em uma linha única,
+    somando quantidade, valor total e desconto.
+    """
+    if not itens:
+        return []
+
+    agrupados = {}
+    ordem = []
+
+    for item in itens:
+        if not item:
+            continue
+        desc = (item.get('descricao_original') or item.get('produto') or '').strip()
+        if not desc:
+            continue
+        unidade = (item.get('unidade') or 'un').strip() or 'un'
+        valor_unitario = round(_to_float(item.get('valor_unitario'), 0.0), 4)
+        key = (normalizar_texto(desc), normalizar_texto(unidade), valor_unitario)
+
+        quantidade = _to_float(item.get('quantidade'), 1.0)
+        valor_total = _to_float(item.get('valor_total'), quantidade * valor_unitario)
+        desconto = _to_float(item.get('desconto'), 0.0)
+
+        if key not in agrupados:
+            agrupados[key] = {
+                'descricao_original': desc,
+                'quantidade': 0.0,
+                'unidade': unidade,
+                'valor_unitario': valor_unitario,
+                'valor_total': 0.0,
+                'desconto': 0.0,
+            }
+            ordem.append(key)
+
+        agrupados[key]['quantidade'] += quantidade
+        agrupados[key]['valor_total'] += valor_total
+        agrupados[key]['desconto'] += desconto
+
+    resultado = []
+    for key in ordem:
+        item = agrupados[key]
+        # Arredonda para evitar resíduos de ponto flutuante no display/salvamento.
+        item['quantidade'] = round(float(item['quantidade']), 4)
+        item['valor_unitario'] = round(float(item['valor_unitario']), 4)
+        item['valor_total'] = round(float(item['valor_total']), 2)
+        item['desconto'] = round(float(item['desconto']), 2)
+        resultado.append(item)
+    return resultado
+
 def add_compra_com_itens_nfce(mercado_nome, cnpj, data_compra, valor_total, chave_nfce, url_qrcode, itens, observacoes='', forma_pagamento='', valor_pago=0):
     """Registra compra NFC-e e todos os itens.
 
@@ -687,8 +753,9 @@ def add_compra_com_itens_nfce(mercado_nome, cnpj, data_compra, valor_total, chav
     mercado_id = get_or_create_mercado(mercado_nome, cnpj) if mercado_nome or cnpj else None
     status = 'Conferida' if itens else 'Pendente'
     compra_id = add_compra(mercado_id, data_compra, valor_total, chave_nfce, url_qrcode, 'QR Code', status, observacoes, forma_pagamento, valor_pago)
+    itens_agrupados = agrupar_itens_identicos_nfce(itens or [])
     try:
-        for item in itens or []:
+        for item in itens_agrupados:
             desc = (item.get('descricao_original') or '').strip()
             if not desc:
                 continue

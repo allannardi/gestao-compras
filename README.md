@@ -168,7 +168,14 @@ Ajuste de dependências para Streamlit Cloud: removidos pins rígidos de versõe
 - Troca o acesso Turso para HTTP puro via `requests`, removendo dependência nativa `libsql` para evitar Segmentation fault no Streamlit Cloud.
 
 
-## v0.5.11
+## v0.5.12
 
 - Corrige erro ao confirmar compra quando a unidade do produto (ex.: lt, kg, pc) era interpretada como categoria_id no Turso.
 - Mantém ajustes de estabilidade online da v0.5.10.
+
+
+## v0.5.12
+
+- Consolida itens idênticos na mesma compra antes da conferência e do registro.
+- Critério: mesma descrição, mesma unidade e mesmo valor unitário.
+- Soma quantidade, valor total e desconto, exibindo apenas uma linha por item idêntico.

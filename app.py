@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.11 • Cards mobile")
+    st.sidebar.caption("v0.5.12 • Itens consolidados")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -559,9 +559,13 @@ def preparar_preview_nfce(qr_texto, key_prefix, obs_extra=""):
     valor_pago_default = float(dados.get("valor_pago") or valor_default or 0)
     valor_pago = c6.number_input("Valor pago", min_value=0.0, value=valor_pago_default, step=1.0, format="%.2f", key=f"{key_prefix}_valor_pago")
 
-    itens = dados.get("itens") or []
+    itens_originais = dados.get("itens") or []
+    itens = db.agrupar_itens_identicos_nfce(itens_originais)
     if itens:
-        st.caption(f"Itens encontrados automaticamente: {len(itens)}. Confira rapidamente antes de registrar.")
+        if len(itens) != len(itens_originais):
+            st.caption(f"Itens encontrados automaticamente: {len(itens_originais)}. Consolidados para {len(itens)} linhas idênticas. Confira rapidamente antes de registrar.")
+        else:
+            st.caption(f"Itens encontrados automaticamente: {len(itens)}. Confira rapidamente antes de registrar.")
         itens_confirmados = []
         for item in itens:
             itens_confirmados.append({
