@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.8 • Cards compactos")
+    st.sidebar.caption("v0.5.9 • Cards mobile")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -253,21 +253,54 @@ def render_itens_compra_modal(itens):
 </div>
 """, unsafe_allow_html=True)
 
+
+
+def render_mobile_record_card(title, subtitle=None, fields=None, footer=None, button_label=None, button_key=None):
+    """Card compacto para substituir tabelas no mobile."""
+    title = _safe_html(title or "-")
+    subtitle_html = f'<div class="mobile-table-subtitle">{_safe_html(subtitle)}</div>' if subtitle else ""
+    fields = fields or []
+    fields_html = "".join(
+        f'<div class="mobile-table-field"><span>{_safe_html(label)}</span><strong>{_safe_html(value)}</strong></div>'
+        for label, value in fields
+    )
+    footer_html = f'<div class="mobile-table-footer">{footer}</div>' if footer else ""
+    st.markdown(f"""
+<div class="mobile-table-card">
+  <div class="mobile-table-title">{title}</div>
+  {subtitle_html}
+  <div class="mobile-table-grid">{fields_html}</div>
+  {footer_html}
+</div>
+""", unsafe_allow_html=True)
+    if button_label and button_key:
+        return st.button(button_label, key=button_key, use_container_width=True)
+    return False
+
 def render_top_produtos_dashboard(top):
-    widths = [2.8, 0.85, 0.85, 1.25, 0.85, 1.25]
-    header_cols = st.columns(widths)
-    labels = ["Produto", "QTD", "Unidade", "Valor Unitário", "Compras", "Valor Total"]
-    for idx, (col, label) in enumerate(zip(header_cols, labels)):
-        align = "left" if idx == 0 else "center"
-        col.markdown(f"<div class='table-header table-{align}'>{label}</div>", unsafe_allow_html=True)
+    """Top produtos em cards responsivos, melhor no celular."""
+    if top is None or top.empty:
+        return
+    st.markdown('<div class="mobile-list-title">Top produtos do mês</div>', unsafe_allow_html=True)
     for _, row in top.iterrows():
-        cols = st.columns(widths)
-        cols[0].markdown(f"<div class='table-cell'>{row['produto']}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div class='table-cell table-center'>{qtd_br(row['quantidade'])}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div class='table-cell table-center'>{row['unidade'] or '-'}</div>", unsafe_allow_html=True)
-        cols[3].markdown(f"<div class='table-cell table-center'>{brl(float(row['valor_unitario'] or 0))}</div>", unsafe_allow_html=True)
-        cols[4].markdown(f"<div class='table-cell table-center'>{int(row['compras'] or 0)}</div>", unsafe_allow_html=True)
-        cols[5].markdown(f"<div class='table-cell table-center table-strong'>{brl(float(row['valor_total'] or 0))}</div>", unsafe_allow_html=True)
+        produto = row.get("produto") or "Produto não identificado"
+        quantidade = qtd_br(row.get("quantidade") or 0)
+        unidade = row.get("unidade") or "-"
+        valor_unitario = brl(float(row.get("valor_unitario") or 0))
+        compras = str(int(row.get("compras") or 0))
+        valor_total = brl(float(row.get("valor_total") or 0))
+        st.markdown(f"""
+<div class="mobile-table-card top-product-card">
+  <div class="mobile-table-title">{_safe_html(produto)}</div>
+  <div class="mobile-table-grid">
+    <div class="mobile-table-field"><span>QTD</span><strong>{quantidade}</strong></div>
+    <div class="mobile-table-field"><span>Un.</span><strong>{_safe_html(unidade)}</strong></div>
+    <div class="mobile-table-field"><span>Unitário</span><strong>{valor_unitario}</strong></div>
+    <div class="mobile-table-field"><span>Compras</span><strong>{compras}</strong></div>
+  </div>
+  <div class="mobile-table-total">Valor total: <strong>{valor_total}</strong></div>
+</div>
+""", unsafe_allow_html=True)
 
 
 def page_dashboard():
@@ -699,20 +732,18 @@ def page_categorias():
     if cats.empty:
         st.info("Nenhuma categoria cadastrada.")
     else:
-        header_cols = st.columns([0.55, 2.4, 1.4, 0.9, 0.8])
-        labels = ["ID", "Categoria", "Grupo", "Status", "Editar"]
-        for col, label in zip(header_cols, labels):
-            col.markdown(f"<div class='table-header'>{label}</div>", unsafe_allow_html=True)
-
+        st.markdown('<div class="mobile-list-title">Categorias cadastradas</div>', unsafe_allow_html=True)
         for _, row in cats.iterrows():
             categoria_id = int(row["id"])
-            cols = st.columns([0.55, 2.4, 1.4, 0.9, 0.8])
-            cols[0].markdown(f"<div class='table-cell'>{categoria_id}</div>", unsafe_allow_html=True)
-            cols[1].markdown(f"<div class='table-cell'>{row['nome'] or '-'}</div>", unsafe_allow_html=True)
-            cols[2].markdown(f"<div class='table-cell'>{row['grupo'] or '-'}</div>", unsafe_allow_html=True)
             status = "Ativa" if int(row.get("ativo", 1)) == 1 else "Inativa"
-            cols[3].markdown(f"<div class='table-cell'>{status}</div>", unsafe_allow_html=True)
-            if cols[4].button("Editar", key=f"editar_categoria_{categoria_id}", use_container_width=True):
+            clicked = render_mobile_record_card(
+                row.get("nome") or "Sem nome",
+                f"ID {categoria_id}",
+                [("Grupo", row.get("grupo") or "-"), ("Status", status)],
+                button_label="Editar categoria",
+                button_key=f"editar_categoria_{categoria_id}",
+            )
+            if clicked:
                 st.session_state.editar_categoria_id = categoria_id
                 rerun()
 
@@ -792,23 +823,19 @@ def page_mercados():
     if mercados.empty:
         st.info("Nenhum supermercado cadastrado ainda.")
     else:
-        header_cols = st.columns([0.5, 2.2, 1.3, 1.2, 1.2, 0.6, 0.85, 0.8])
-        labels = ["ID", "Supermercado", "CNPJ", "Cidade", "Bairro", "UF", "Status", "Editar"]
-        for col, label in zip(header_cols, labels):
-            col.markdown(f"<div class='table-header'>{label}</div>", unsafe_allow_html=True)
-
+        st.markdown('<div class="mobile-list-title">Supermercados cadastrados</div>', unsafe_allow_html=True)
         for _, row in mercados.iterrows():
             mercado_id = int(row["id"])
-            cols = st.columns([0.5, 2.2, 1.3, 1.2, 1.2, 0.6, 0.85, 0.8])
-            cols[0].markdown(f"<div class='table-cell'>{mercado_id}</div>", unsafe_allow_html=True)
-            cols[1].markdown(f"<div class='table-cell'>{row['nome'] or '-'}</div>", unsafe_allow_html=True)
-            cols[2].markdown(f"<div class='table-cell'>{row['cnpj'] or '-'}</div>", unsafe_allow_html=True)
-            cols[3].markdown(f"<div class='table-cell'>{row['cidade'] or '-'}</div>", unsafe_allow_html=True)
-            cols[4].markdown(f"<div class='table-cell'>{row['bairro'] or '-'}</div>", unsafe_allow_html=True)
-            cols[5].markdown(f"<div class='table-cell'>{row['uf'] or '-'}</div>", unsafe_allow_html=True)
             status = "Ativo" if int(row.get("ativo", 1)) == 1 else "Inativo"
-            cols[6].markdown(f"<div class='table-cell'>{status}</div>", unsafe_allow_html=True)
-            if cols[7].button("Editar", key=f"editar_mercado_{mercado_id}", use_container_width=True):
+            local = " / ".join([str(x) for x in [row.get("cidade"), row.get("uf")] if x]) or "Local não informado"
+            clicked = render_mobile_record_card(
+                row.get("nome") or "Sem nome",
+                f"ID {mercado_id} · {local}",
+                [("CNPJ", row.get("cnpj") or "-"), ("Bairro", row.get("bairro") or "-"), ("Status", status)],
+                button_label="Editar supermercado",
+                button_key=f"editar_mercado_{mercado_id}",
+            )
+            if clicked:
                 st.session_state.editar_mercado_id = mercado_id
                 rerun()
 
@@ -920,41 +947,25 @@ def page_produtos():
 
     df = produtos.copy()
     if st.session_state.filtro_produtos == "Para revisar":
-        df = df[df["categoria"].fillna("").isin(["", "Outros"])]
-
-    if busca.strip():
-        b = busca.strip().upper()
-        mask = (
-            df["nome_padronizado"].fillna("").str.upper().str.contains(b, regex=False) |
-            df["marca"].fillna("").str.upper().str.contains(b, regex=False) |
-            df["categoria"].fillna("").str.upper().str.contains(b, regex=False)
-        )
-        df = df[mask]
-
-    if st.session_state.filtro_produtos == "Para revisar":
         st.caption(f"{len(df)} produto(s) para revisar. Corrija a categoria pelo botão Editar.")
     else:
         st.caption(f"{len(df)} produto(s) exibido(s).")
 
-    header_cols = st.columns([0.55, 2.4, 1.1, 1.35, 0.9, 0.9, 0.8])
-    labels = ["ID", "Produto", "Marca", "Categoria", "Unidade", "Status", "Editar"]
-    for col, label in zip(header_cols, labels):
-        col.markdown(f"<div class='table-header'>{label}</div>", unsafe_allow_html=True)
-
+    st.markdown('<div class="mobile-list-title">Produtos cadastrados</div>', unsafe_allow_html=True)
     for _, row in df.iterrows():
         produto_id = int(row["id"])
-        cols = st.columns([0.55, 2.4, 1.1, 1.35, 0.9, 0.9, 0.8])
-        cols[0].markdown(f"<div class='table-cell'>{produto_id}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div class='table-cell'>{row['nome_padronizado'] or '-'}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div class='table-cell'>{row['marca'] or '-'}</div>", unsafe_allow_html=True)
-        cols[3].markdown(f"<div class='table-cell'>{row['categoria'] or 'Sem categoria'}</div>", unsafe_allow_html=True)
-        unidade = row['unidade_padrao'] or '-'
-        qtd = float(row['quantidade_padrao'] or 0)
+        unidade = row.get('unidade_padrao') or '-'
+        qtd = float(row.get('quantidade_padrao') or 0)
         unidade_txt = f"{qtd:g} {unidade}" if qtd and qtd != 1 else unidade
-        cols[4].markdown(f"<div class='table-cell'>{unidade_txt}</div>", unsafe_allow_html=True)
         status = "Ativo" if int(row.get("ativo", 1)) == 1 else "Inativo"
-        cols[5].markdown(f"<div class='table-cell'>{status}</div>", unsafe_allow_html=True)
-        if cols[6].button("Editar", key=f"editar_produto_{produto_id}", use_container_width=True):
+        clicked = render_mobile_record_card(
+            row.get("nome_padronizado") or "Produto sem nome",
+            f"ID {produto_id}",
+            [("Marca", row.get("marca") or "-"), ("Categoria", row.get("categoria") or "Sem categoria"), ("Unidade", unidade_txt), ("Status", status)],
+            button_label="Editar produto",
+            button_key=f"editar_produto_{produto_id}",
+        )
+        if clicked:
             st.session_state.editar_produto_id = produto_id
             rerun()
 
@@ -1191,17 +1202,13 @@ def page_historico():
 
     if rows:
         var_df = pd.DataFrame(rows).sort_values("variacao", ascending=False).head(10)
-        header_cols = st.columns([3.0, 1.2, 1.2, 1.2, 0.9])
-        labels = ["Produto", "Primeiro Preço", "Último Preço", "Variação", "Registros"]
-        for col, label in zip(header_cols, labels):
-            col.markdown(f"<div class='table-header'>{label}</div>", unsafe_allow_html=True)
+        st.markdown('<div class="mobile-list-title">Maiores variações</div>', unsafe_allow_html=True)
         for _, row in var_df.iterrows():
-            cols = st.columns([3.0, 1.2, 1.2, 1.2, 0.9])
-            cols[0].markdown(f"<div class='table-cell'>{row['produto']}</div>", unsafe_allow_html=True)
-            cols[1].markdown(f"<div class='table-cell'>{brl(float(row['primeiro_preco'] or 0))}</div>", unsafe_allow_html=True)
-            cols[2].markdown(f"<div class='table-cell'>{brl(float(row['ultimo_preco'] or 0))}</div>", unsafe_allow_html=True)
-            cols[3].markdown(f"<div class='table-cell'>{pct(float(row['variacao'] or 0))}</div>", unsafe_allow_html=True)
-            cols[4].markdown(f"<div class='table-cell'>{int(row['registros'])}</div>", unsafe_allow_html=True)
+            render_mobile_record_card(
+                row.get("produto") or "Produto",
+                None,
+                [("Primeiro", brl(float(row.get("primeiro_preco") or 0))), ("Último", brl(float(row.get("ultimo_preco") or 0))), ("Variação", pct(float(row.get("variacao") or 0))), ("Registros", int(row.get("registros") or 0))],
+            )
     else:
         st.caption("Ainda não há produtos com dois ou mais registros para calcular variação.")
 
@@ -1276,24 +1283,17 @@ def page_historico():
         st.info("Nenhum registro encontrado para o filtro selecionado.")
         return
 
-    header_cols = st.columns([1.05, 2.7, 0.75, 0.65, 1.15, 1.15, 1.7, 1.25])
-    labels = ["Data", "Produto", "Qtd.", "Un.", "Valor Unit.", "Valor Total", "Supermercado", "Categoria"]
-    for col, label in zip(header_cols, labels):
-        col.markdown(f"<div class='table-header'>{label}</div>", unsafe_allow_html=True)
-
-    table_height = 380 if len(df) > 8 else None
+    st.markdown('<div class="mobile-list-title">Registros do histórico</div>', unsafe_allow_html=True)
+    table_height = 520 if len(df) > 8 else None
     table_container = st.container(height=table_height, border=False) if table_height else st.container()
     with table_container:
         for _, row in df.iterrows():
-            cols = st.columns([1.05, 2.7, 0.75, 0.65, 1.15, 1.15, 1.7, 1.25])
-            cols[0].markdown(f"<div class='table-cell'>{_format_date_br(row['data_compra'])}</div>", unsafe_allow_html=True)
-            cols[1].markdown(f"<div class='table-cell'>{row['produto_exibicao']}</div>", unsafe_allow_html=True)
-            cols[2].markdown(f"<div class='table-cell'>{float(row['quantidade'] or 0):g}</div>", unsafe_allow_html=True)
-            cols[3].markdown(f"<div class='table-cell'>{row['unidade'] or '-'}</div>", unsafe_allow_html=True)
-            cols[4].markdown(f"<div class='table-cell'>{brl(float(row['valor_unitario'] or 0))}</div>", unsafe_allow_html=True)
-            cols[5].markdown(f"<div class='table-cell'>{brl(float(row['valor_total'] or 0))}</div>", unsafe_allow_html=True)
-            cols[6].markdown(f"<div class='table-cell'>{row['mercado_exibicao']}</div>", unsafe_allow_html=True)
-            cols[7].markdown(f"<div class='table-cell'>{row['categoria_exibicao']}</div>", unsafe_allow_html=True)
+            render_mobile_record_card(
+                row.get("produto_exibicao") or "Produto",
+                f"{_format_date_br(row.get('data_compra'))} · {row.get('mercado_exibicao') or 'Sem supermercado'}",
+                [("QTD", qtd_br(row.get("quantidade") or 0)), ("Un.", row.get("unidade") or "-"), ("Unitário", brl(float(row.get("valor_unitario") or 0))), ("Total", brl(float(row.get("valor_total") or 0)))],
+                footer=f"Categoria: <strong>{_safe_html(row.get('categoria_exibicao') or 'Sem categoria')}</strong>",
+            )
 
 def make_excel():
     output = BytesIO()
