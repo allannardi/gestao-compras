@@ -109,7 +109,7 @@ def header():
 
 def sidebar():
     st.sidebar.markdown("## Gestão de Compras")
-    st.sidebar.caption("v0.5.13 • Captura traseira iPhone")
+    st.sidebar.caption("v0.5.14 • Captura original restaurada")
     pages = [
         "Adicionar Compra",
         "Dashboard",
@@ -620,23 +620,22 @@ def page_capturar_nf():
     )
 
     st.markdown("#### Ler QR-CODE da NF")
-    st.caption("No iPhone, use esta opção para fotografar o QR Code. O iOS normalmente abre o fluxo de câmera traseira ao escolher Tirar Foto.")
+    st.caption("Tire uma foto aproximada do QR Code impresso na nota fiscal.")
     if st.button("Ler QR-CODE da NF", width="stretch", key="btn_ler_qrcode_nf"):
-        st.session_state.mostrar_captura_qr = True
-        st.session_state.mostrar_captura_nf = False
+        st.session_state.mostrar_camera_qr = True
+        st.session_state.mostrar_camera_nf = False
 
-    uploaded_qr = None
-    if st.session_state.get("mostrar_captura_qr"):
-        st.info("Toque no botão abaixo e escolha **Tirar Foto**. Enquadre somente o QR Code da NFC-e.")
-        uploaded_qr = st.file_uploader("Selecionar ou fotografar QR Code da NF", type=["png", "jpg", "jpeg", "webp"], key="upload_qr_camera")
-        if st.button("Fechar captura do QR Code", width="stretch", key="btn_fechar_captura_qr"):
-            st.session_state.mostrar_captura_qr = False
+    foto_qr = None
+    if st.session_state.get("mostrar_camera_qr"):
+        foto_qr = st.camera_input("Fotografar QR Code da NF", key="camera_qr_nf")
+        if st.button("Fechar câmera do QR Code", width="stretch", key="btn_fechar_camera_qr"):
+            st.session_state.mostrar_camera_qr = False
             rerun()
 
     st.markdown("#### Upload da NF")
-    uploaded_qr_manual = st.file_uploader("Enviar imagem salva do QR Code da NF", type=["png", "jpg", "jpeg", "webp"], key="upload_qr")
+    uploaded_qr = st.file_uploader("Enviar imagem do QR Code da NF", type=["png", "jpg", "jpeg", "webp"], key="upload_qr")
 
-    img = uploaded_qr or uploaded_qr_manual
+    img = foto_qr or uploaded_qr
     if img is not None:
         try:
             texto_qr = detectar_qrcode_em_imagem(img)
@@ -656,13 +655,13 @@ def page_capturar_nf():
     st.markdown("#### Tirar foto da NF")
     st.caption("Use esta opção apenas quando a leitura do QR Code não funcionar. Ela cria uma compra pendente para completar depois.")
     if st.button("Tirar foto da NF", width="stretch", key="btn_tirar_foto_nf"):
-        st.session_state.mostrar_captura_nf = True
-        st.session_state.mostrar_captura_qr = False
+        st.session_state.mostrar_camera_nf = True
+        st.session_state.mostrar_camera_qr = False
 
-    if st.session_state.get("mostrar_captura_nf"):
-        foto_nf = st.file_uploader("Selecionar ou fotografar a nota fiscal completa", type=["png", "jpg", "jpeg", "webp"], key="upload_foto_nf_camera")
-        if st.button("Fechar captura da NF", width="stretch", key="btn_fechar_captura_nf"):
-            st.session_state.mostrar_captura_nf = False
+    if st.session_state.get("mostrar_camera_nf"):
+        foto_nf = st.camera_input("Fotografar nota fiscal completa", key="camera_nf")
+        if st.button("Fechar câmera da NF", width="stretch", key="btn_fechar_camera_nf"):
+            st.session_state.mostrar_camera_nf = False
             rerun()
         if foto_nf is not None:
             caminho = salvar_imagem_nf(foto_nf, "foto_nf")

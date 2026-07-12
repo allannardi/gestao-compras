@@ -181,7 +181,7 @@ Ajuste de dependências para Streamlit Cloud: removidos pins rígidos de versõe
 - Soma quantidade, valor total e desconto, exibindo apenas uma linha por item idêntico.
 
 
-## v0.5.13
-- Ajuste no fluxo de captura no iPhone: substitui `st.camera_input` por `file_uploader` no fluxo de foto/captura, para permitir que o iOS ofereça a opção **Tirar Foto** e normalmente use a câmera traseira.
-- Mantém leitura de QR Code, upload de imagem e criação de compra pendente por foto da NF.
-- Observação: o Streamlit não permite escolher explicitamente câmera frontal/traseira via `st.camera_input`; por isso o fluxo mobile passa a usar o seletor nativo do iOS.
+## v0.5.14
+- Restaura o fluxo anterior de câmera com `st.camera_input` para QR Code e foto da NF.
+- Mantém a consolidação de itens idênticos da v0.5.12.
+- Mantém ícones novos em `assets/app_icon.png` e `assets/favicon.png`.
